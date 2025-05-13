@@ -30,7 +30,6 @@ import { RootState } from '@/redux/store';
 import { translationLanguagesContribute } from '@/utils/functions/translationLanguages';
 import { EntityForm } from './EntityForm';
 import ChangesSummary from './ChangesSummary';
-import { FooterComponent } from '@/components/SelectorComponents/ButtonComponents/FooterComponents';
 import FooterModal from '@/components/commonComponents/FooterModal';
 import { footerStyle } from '@/styleMUI';
 import { Box } from '@mui/material';
@@ -269,7 +268,7 @@ export const ContributionForm = ({
                 {globalExpand ? translatedcontribute.collapse : translatedcontribute.expand}
               </a>
             </div>
-            <div style={{ overflowY: 'auto', padding: 4, flex: 1, maxHeight: '80vh' }}>
+            <div style={{ overflowY: 'auto', padding:'4px 10px 10px 4px', flex: 1, maxHeight: '80vh' }}>
               <EntityForm
                 key={entity.entityRef.id}
                 schema={schema}
@@ -284,7 +283,6 @@ export const ContributionForm = ({
             </div>
           
           </Card>
-          <FooterModal content='...' height={32}/>
         </Col>
 
         <Col
