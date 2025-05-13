@@ -19,7 +19,7 @@
 }
 
 .collapse-title {
-  color: rgb(55, 148, 141) !important;
+  color: rgb(255, 255, 255) !important;
   font-size: 1rem !important;
   font-weight: 700 !important;
 }
@@ -30,15 +30,18 @@
   margin-top: 12px;
   .ant-collapse-item {
     .ant-collapse-header {
-      padding: 0;
-      color: rgb(55, 148, 141);
-      font-size: 1.25rem !important;
-      font-weight: 700 !important;
+    color: white;
+    font-size: 0.85rem !important;
+    font-weight: 600 !important;
+    background: rgb(55, 148, 141);
+    padding: 10px 2px 0px 10px;
+    border-bottom: 1px solid #f9f9f940;
     }
     .ant-collapse-content {
       .ant-collapse-content-box {
-        border-radius: 3px;
+        border-bottom-left-radius: 3px;
         margin-bottom: 10px;
+        border-bottom-right-radius: 3px;
       }
     }
   }

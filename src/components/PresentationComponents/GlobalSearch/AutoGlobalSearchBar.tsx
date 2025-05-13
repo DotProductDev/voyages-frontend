@@ -181,7 +181,6 @@ const AutoGlobalSearchBar = () => {
               key={`${option.type}-${index}`}
               className="list-search-global"
             >
-
               <ListItemButton
                 onClick={() => handleSelect(option)}
                 disabled={shouldDisable(option)}
