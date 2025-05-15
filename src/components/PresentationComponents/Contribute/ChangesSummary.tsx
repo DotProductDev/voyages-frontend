@@ -40,6 +40,7 @@ const ChangesSummary = ({
     return (
         <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
             <Row style={{ margin: '12px 0', gap: 8 }}>
+                <Button>Preview</Button>
                 <Button
                     className="button-reset-contribute"
                     icon={<ReloadOutlined />}
@@ -57,7 +58,6 @@ const ChangesSummary = ({
                     Save Changes
                 </Button>
             </Row>
-
             <div style={{ flex: 1, overflowY: 'auto' }}>
                 {changes.length === 0 ? (
                     <Text type="secondary" italic>
