@@ -32,9 +32,32 @@ import { EntityForm } from './EntityForm';
 import ChangesSummary from './ChangesSummary';
 import FooterModal from '@/components/commonComponents/FooterModal';
 import { footerStyle } from '@/styleMUI';
-import { Box } from '@mui/material';
+import { Box, Checkbox, Dialog, FormControlLabel } from '@mui/material';
+import { EntityView } from './EntityView';
 
 const { Text } = Typography;
+
+interface PreviewEntityProps {
+  entity: MaterializedEntity;
+}
+
+const PreviewEntity = ({ entity }: PreviewEntityProps) => {
+  const [hideEmptyFields, setHideEmptyFields] = useState(true);
+  return (
+    <>
+      <FormControlLabel
+        label="Hide empty fields"
+        control={
+          <Checkbox
+            checked={hideEmptyFields}
+            onChange={(e) => setHideEmptyFields(!hideEmptyFields)}
+          />
+        }
+      />
+      <EntityView entity={entity} hideEmptyFields={hideEmptyFields} />
+    </>
+  );
+};
 
 export const ContributionForm = ({
   entity,
@@ -59,12 +82,20 @@ export const ContributionForm = ({
   const [globalExpand, setGlobalExpand] = useState(false);
   const [expandedMenu, setExpandedMenu] = useState<string[]>([]);
   const [sections, setSections] = useState<CollapseProps['items']>([]);
-  const { languageValue } = useSelector((state: RootState) => state.getLanguages);
+  const { languageValue } = useSelector(
+    (state: RootState) => state.getLanguages,
+  );
   const translatedcontribute = translationLanguagesContribute(languageValue);
+  const [previewEntity, setPreviewEntity] = useState<
+    MaterializedEntity | undefined
+  >(undefined);
 
   const accessLevelOptions = Object.entries(PropertyAccessLevel)
     .filter(([key]) => isNaN(Number(key)) && key !== 'Hidden')
-    .map(([label, value]) => ({ label: label.replace(/([A-Z])/g, ' $1').trim(), value }));
+    .map(([label, value]) => ({
+      label: label.replace(/([A-Z])/g, ' $1').trim(),
+      value,
+    }));
 
   useEffect(() => {
     contributeForm.setFieldsValue({
@@ -85,7 +116,7 @@ export const ContributionForm = ({
   function combineOwnedChanges(changes: PropertyChange[]): PropertyChange[] {
     const seen: Record<string, PropertyChange> = {};
 
-    changes.forEach(change => {
+    changes.forEach((change) => {
       seen[change.property] = change; // overwrite old with new
     });
 
@@ -104,11 +135,11 @@ export const ContributionForm = ({
   );
 
   function combineEntityChanges(changes: EntityChange[]): EntityChange[] {
-    return changes.map(change => {
+    return changes.map((change) => {
       if (change.type === 'update') {
         return {
           ...change,
-          changes: change.changes.map(propertyChange => {
+          changes: change.changes.map((propertyChange) => {
             if (propertyChange.kind === 'owned') {
               return {
                 ...propertyChange,
@@ -132,6 +163,7 @@ export const ContributionForm = ({
 
     const updated = cloneEntity(entity);
     applyChanges(expandMaterialized(updated), changeSet.changes);
+    setPreviewEntity(updated);
     console.log('Entity after applying changes:', updated);
   };
 
@@ -146,7 +178,6 @@ export const ContributionForm = ({
         timestamp: Date.now(),
         changes: changeSet.changes,
       };
-
 
       console.log('Submit Payload:', payload);
 
@@ -176,18 +207,23 @@ export const ContributionForm = ({
     setGlobalExpand(!globalExpand);
   };
 
-  const handleDeletePropertyChange = (
-    propertyToDelete: string
-  ) => {
-    setChangeSet(prev => {
+  const handleDeletePropertyChange = (propertyToDelete: string) => {
+    setChangeSet((prev) => {
       const updatedChanges: EntityChange[] = prev.changes
-        .map(entityChange => {
-          if ('changes' in entityChange && Array.isArray(entityChange.changes)) {
+        .map((entityChange) => {
+          if (
+            'changes' in entityChange &&
+            Array.isArray(entityChange.changes)
+          ) {
             const updatedEntityChanges = entityChange.changes
-              .map(propChange => {
-                if ('changes' in propChange && Array.isArray(propChange.changes)) {
+              .map((propChange) => {
+                if (
+                  'changes' in propChange &&
+                  Array.isArray(propChange.changes)
+                ) {
                   const filteredFieldChanges = propChange.changes.filter(
-                    (fieldChange: any) => fieldChange?.property !== propertyToDelete
+                    (fieldChange: any) =>
+                      fieldChange?.property !== propertyToDelete,
                   );
 
                   if (filteredFieldChanges.length === 0) return null;
@@ -225,10 +261,18 @@ export const ContributionForm = ({
       form={contributeForm}
       layout="vertical"
       onFinish={submitChanges}
-      style={{ display: 'flex', flexDirection: 'column', height: `${height}vh` }}
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: `${height}vh`,
+      }}
     >
       {/* Top Form - Contribution Details */}
-      <Card title="Contribution Details" style={{ flexShrink: 0 }} styles={{ body: { padding: '10px 16px' } }}>
+      <Card
+        title="Contribution Details"
+        style={{ flexShrink: 0 }}
+        styles={{ body: { padding: '10px 16px' } }}
+      >
         <Row gutter={6}>
           <Col span={12}>
             <Form.Item label="Contribution Title" name="title">
@@ -254,21 +298,57 @@ export const ContributionForm = ({
       </Card>
 
       {/* Middle Section */}
-      <Row style={{ display: 'flex', flex: 1, overflow: 'hidden', gap: '4px', padding: '12px 0' }}>
-        <Col span={12} style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%' }}>
-          <Card style={{ flex: 1, overflow: 'hidden' }}
+      <Row
+        style={{
+          display: 'flex',
+          flex: 1,
+          overflow: 'hidden',
+          gap: '4px',
+          padding: '12px 0',
+        }}
+      >
+        <Col
+          span={12}
+          style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            height: '100%',
+          }}
+        >
+          <Card
+            style={{ flex: 1, overflow: 'hidden' }}
             styles={{
               body: {
                 padding: 8,
               },
-            }}>
-            <div style={{ position: 'sticky', top: 0, background: '#fff', padding: 10, borderBottom: '1px solid #f0f0f0', zIndex: 99 }}>
+            }}
+          >
+            <div
+              style={{
+                position: 'sticky',
+                top: 0,
+                background: '#fff',
+                padding: 10,
+                borderBottom: '1px solid #f0f0f0',
+                zIndex: 99,
+              }}
+            >
               <Text strong>{translatedcontribute.titleCollaps}</Text>
               <a onClick={toggleExpandAll} style={{ marginLeft: 12 }}>
-                {globalExpand ? translatedcontribute.collapse : translatedcontribute.expand}
+                {globalExpand
+                  ? translatedcontribute.collapse
+                  : translatedcontribute.expand}
               </a>
             </div>
-            <div style={{ overflowY: 'auto', padding:'4px 10px 10px 4px', flex: 1, maxHeight: '80vh' }}>
+            <div
+              style={{
+                overflowY: 'auto',
+                padding: 4,
+                flex: 1,
+                maxHeight: '80vh',
+              }}
+            >
               <EntityForm
                 key={entity.entityRef.id}
                 schema={schema}
@@ -281,8 +361,8 @@ export const ContributionForm = ({
                 onSectionsChange={setSections}
               />
             </div>
-          
           </Card>
+          <FooterModal content='...' height={32}/>
         </Col>
 
         <Col
@@ -312,18 +392,23 @@ export const ContributionForm = ({
             }}
           >
             {/* Sticky header */}
-            <div style={{
-              padding: 10,
-              borderBottom: '1px solid #eee',
-              background: '#fff',
-              position: 'sticky',
-              top: 0,
-              zIndex: 1,
-              display: 'flex',
-              justifyContent: 'space-between',
-            }}>
+            <div
+              style={{
+                padding: 10,
+                borderBottom: '1px solid #eee',
+                background: '#fff',
+                position: 'sticky',
+                top: 0,
+                zIndex: 1,
+                display: 'flex',
+                justifyContent: 'space-between',
+              }}
+            >
               <Text strong>Changes Summary</Text>
-              <Text type="secondary">{changeSet.changes.length} change{changeSet.changes.length !== 1 && 's'}</Text>
+              <Text type="secondary">
+                {changeSet.changes.length} change
+                {changeSet.changes.length !== 1 && 's'}
+              </Text>
             </div>
 
             {/* Scrollable area */}
@@ -339,21 +424,26 @@ export const ContributionForm = ({
             </div>
           </Card>
           <Box sx={footerStyle}>
-              <Row justify="center" >
-                <Button
-                  style={{ width: 150 }}
-                  type="primary"
-                  onClick={submitChanges}
-                  block
-                  disabled={changeSet.changes.length === 0}
-                >
-                  Submit Changes
-                </Button>
-              </Row>
-            </Box>
+            <Row justify="center">
+              <Button
+                style={{ width: 150 }}
+                type="primary"
+                onClick={submitChanges}
+                block
+                disabled={changeSet.changes.length === 0}
+              >
+                Submit Changes
+              </Button>
+            </Row>
+          </Box>
         </Col>
-      
       </Row>
+      <Dialog
+        open={previewEntity !== undefined}
+        onClose={() => setPreviewEntity(undefined)}
+      >
+        {previewEntity && <PreviewEntity entity={previewEntity} />}
+      </Dialog>
     </Form>
   );
 };

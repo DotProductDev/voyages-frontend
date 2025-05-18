@@ -7,6 +7,7 @@ import {
   areMatch,
   OwnedEntityListChange,
   OwnedEntityListProperty,
+  expandMaterialized,
 } from '@dotproductdev/voyages-contribute';
 import {
   IconButton,
@@ -19,9 +20,9 @@ import {
   TableRow,
 } from '@mui/material';
 import { Typography } from 'antd';
-import  { useCallback, useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { Add } from '@mui/icons-material';
-import {  EntityFormProps } from './EntityForm';
+import { EntityFormProps } from './EntityForm';
 import { EntityTableRow } from './EntityTableRow';
 
 export interface EntityTableViewProps {
@@ -44,7 +45,7 @@ export const EntityTableView = ({
   ...other
 }: EntityTableViewProps & EntityFormProps) => {
   const { label, linkedEntitySchema } = property;
-  console.log({property, entity, ...other})
+  // console.log({property, entity, ...other})
   const fieldValue = entity.data[label];
   if (!isMaterializedEntityArray(fieldValue)) {
     return (
@@ -60,12 +61,12 @@ export const EntityTableView = ({
     if (lastChange) {
       const added = lastChange.modified.filter(
         (m) =>
-          m.ownedEntityId.type === 'new' &&
-          !res.find((e) => areMatch(m.ownedEntityId, e.entityRef)),
+          m.ownedEntity.entityRef.type === 'new' &&
+          !res.find((e) => areMatch(m.ownedEntity.entityRef, e.entityRef)),
       );
       for (const m of added) {
-        const item = materializeNew(childSchema, m.ownedEntityId.id);
-        applyUpdate(item, {}, m.changes);
+        const item = m.ownedEntity
+        applyUpdate(item, m.changes);
         res.push(item);
       }
     }
@@ -94,9 +95,10 @@ export const EntityTableView = ({
     );
     if (childProp === undefined) {
       throw new Error(
-        `Invalid schema: the child property "${property.childBackingProp}" was not found in ${linkedEntitySchema}`,
+        `Invalid schema: the child property "${property.childBackingProp}" was not found in ${childSchema.name}`,
       );
     }
+    const added = materializeNew(childSchema, `${new Date().getTime()}${crypto.randomUUID()}`);
     onChange({
       type: 'update',
       entityRef: entity.entityRef,
@@ -107,11 +109,7 @@ export const EntityTableView = ({
             ...change.modified,
             {
               kind: 'owned',
-              ownedEntityId: {
-                type: 'new',
-                id: `${new Date().getTime()}${crypto.randomUUID()}`,
-                schema: linkedEntitySchema,
-              },
+              ownedEntity: added,
               property: property.uid,
               changes: [
                 {
@@ -125,17 +123,22 @@ export const EntityTableView = ({
         },
       ],
     });
-  }, [entity, lastChange, property, linkedEntitySchema, onChange]);
+  }, [entity, lastChange, property, childSchema, onChange]);
 
   return (
-    <div style={{ marginBottom: '10px'}}>
+    <div style={{ marginBottom: '10px' }}>
       <TableContainer component={Paper}>
         <Table aria-label="collapsible table">
           <TableHead>
-            <TableRow >
+            <TableRow>
               <TableCell />
               <TableCell>
-                <Typography.Title level={5}  style={{ color: 'rgb(55, 148, 141)' }}>{property.label}</Typography.Title>
+                <Typography.Title
+                  level={5}
+                  style={{ color: 'rgb(55, 148, 141)' }}
+                >
+                  {property.label}
+                </Typography.Title>
               </TableCell>
               <TableCell align="right">
                 <IconButton size="small" color="success" onClick={handleAdd}>

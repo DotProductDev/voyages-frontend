@@ -84,9 +84,7 @@ export const LinkedEntityPropertyComponent = (
         console.warn('No matching option found for item:', item);
         return;
       }
-
-      const { entity } = matchedOption;
-      console.log({entity:entity})
+      
       onChange({
         type: 'update',
         entityRef: entity.entityRef,
@@ -101,7 +99,7 @@ export const LinkedEntityPropertyComponent = (
                 schema: linkedEntitySchema,
                 type: 'existing',
               },
-              data: entity.data ?? {},
+              data: matchedOption.entity.data,
               state: 'lazy',
             },
           },
