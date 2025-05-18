@@ -420,12 +420,6 @@ export const ContributionForm = ({
       open={previewEntity !== undefined}
       onClose={() => setPreviewEntity(undefined)}
       />
-      {/* <Dialog
-        open={previewEntity !== undefined}
-        onClose={() => setPreviewEntity(undefined)}
-      >
-        {previewEntity && <PreviewEntity entity={previewEntity} />}
-      </Dialog> */}
     </Form>
   );
 };
