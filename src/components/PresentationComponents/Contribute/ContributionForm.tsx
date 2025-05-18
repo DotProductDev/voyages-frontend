@@ -30,34 +30,12 @@ import { RootState } from '@/redux/store';
 import { translationLanguagesContribute } from '@/utils/functions/translationLanguages';
 import { EntityForm } from './EntityForm';
 import ChangesSummary from './ChangesSummary';
-import FooterModal from '@/components/commonComponents/FooterModal';
 import { footerStyle } from '@/styleMUI';
-import { Box, Checkbox, Dialog, FormControlLabel } from '@mui/material';
-import { EntityView } from './EntityView';
+import { Box, Dialog } from '@mui/material';
+import PreviewChangeDialog from './PreviewChange/PreviewChangeDialog';
 
 const { Text } = Typography;
 
-interface PreviewEntityProps {
-  entity: MaterializedEntity;
-}
-
-const PreviewEntity = ({ entity }: PreviewEntityProps) => {
-  const [hideEmptyFields, setHideEmptyFields] = useState(true);
-  return (
-    <>
-      <FormControlLabel
-        label="Hide empty fields"
-        control={
-          <Checkbox
-            checked={hideEmptyFields}
-            onChange={(e) => setHideEmptyFields(!hideEmptyFields)}
-          />
-        }
-      />
-      <EntityView entity={entity} hideEmptyFields={hideEmptyFields} />
-    </>
-  );
-};
 
 export const ContributionForm = ({
   entity,
@@ -288,7 +266,7 @@ export const ContributionForm = ({
             </Form.Item>
             <Row style={{ justifyContent: 'center' }}>
               <Form.Item label=" " colon={false}>
-                <Button danger block onClick={handlePreviewChanges}>
+                <Button className='button-reset-contribute' block onClick={handlePreviewChanges}>
                   Preview Changes
                 </Button>
               </Form.Item>
@@ -362,7 +340,6 @@ export const ContributionForm = ({
               />
             </div>
           </Card>
-          <FooterModal content='...' height={32}/>
         </Col>
 
         <Col
@@ -438,12 +415,17 @@ export const ContributionForm = ({
           </Box>
         </Col>
       </Row>
-      <Dialog
+      <PreviewChangeDialog 
+      previewEntity={previewEntity}
+      open={previewEntity !== undefined}
+      onClose={() => setPreviewEntity(undefined)}
+      />
+      {/* <Dialog
         open={previewEntity !== undefined}
         onClose={() => setPreviewEntity(undefined)}
       >
         {previewEntity && <PreviewEntity entity={previewEntity} />}
-      </Dialog>
+      </Dialog> */}
     </Form>
   );
 };

@@ -1,39 +1,69 @@
+import { Box, Typography } from '@mui/material';
+import { CaretUpOutlined, CaretDownOutlined } from '@ant-design/icons';
 import {
   getSchema,
   isMaterializedEntity,
   isMaterializedEntityArray,
   MaterializedEntity,
 } from '@dotproductdev/voyages-contribute';
+import { useState } from 'react';
 
 export interface EntityViewProps {
   entity: MaterializedEntity;
   hideEmptyFields: boolean;
+  defaultExpanded?: boolean;
 }
 
-export const EntityView = ({ entity, ...props }: EntityViewProps) => {
+export const EntityView = ({ entity, hideEmptyFields ,defaultExpanded}: EntityViewProps) => {
   const schema = getSchema(entity.entityRef.schema);
-  const { hideEmptyFields } = props;
+  const label = schema.getLabel(entity.data, false);
+  const [expanded, setExpanded] = useState(false)
+
   return (
-    <div>
-      <h4>{schema.getLabel(entity.data, false)}</h4>
-      {Object.entries(entity.data)
-        .filter(([_, value]) => !hideEmptyFields || value !== null)
-        .map(([key, value]) => (
-          <div style={{ marginLeft: '6px' }} key={key}>
-            <strong>{key}:</strong>
-            {isMaterializedEntity(value) ? (
-              <EntityView entity={value} {...props} />
-            ) : isMaterializedEntityArray(value) ? (
-              value.map((v, i) => (
-                <div key={i}>
-                  <EntityView entity={v} {...props} />
-                </div>
-              ))
-            ) : (
-              <span>{value}</span>
-            )}
-          </div>
-        ))}
-    </div>
+    <Box sx={{ mb: 3 }}>
+      <Box
+       className="section-header-review"
+       onClick={() => setExpanded((prev) => !prev)}
+        >
+        <Typography >
+          {label}
+          {expanded ? <CaretUpOutlined className='expanded-icon' /> : <CaretDownOutlined style={{ marginLeft: 10, fontSize: 18 }} />}
+        </Typography>
+      </Box>
+      {expanded && ( <Box sx={{ pl: 2, mt: 1 }}>
+        {Object.entries(entity.data)
+          .filter(([_, value]) => !hideEmptyFields || value !== null)
+          .map(([key, value]) => (
+            <Box key={key} sx={{ mb: 1 }}>
+              <Typography variant="body2">
+                <strong>{formatLabel(key)}:</strong>{' '}
+                {isMaterializedEntity(value) ? (
+                  <Box sx={{ pl: 2, borderLeft: '1.5px solid rgb(55, 148, 141)', mt: 1 }}>
+                    <EntityView entity={value} hideEmptyFields={hideEmptyFields} />
+                  </Box>
+                ) : isMaterializedEntityArray(value) ? (
+                  value.map((v, i) => (
+                    <Box
+                      key={i}
+                      sx={{ pl: 2, borderLeft: '1.5px solid rgb(55, 148, 141)', mt: 1 }}
+                    >
+                      <EntityView entity={v} hideEmptyFields={hideEmptyFields} />
+                    </Box>
+                  ))
+                ) : (
+                  <span>{value ?? '—'}</span>
+                )}
+              </Typography>
+            </Box>
+          ))}
+      </Box>)}
+     
+    </Box>
   );
 };
+
+function formatLabel(label: string) {
+  return label
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (l) => l.toUpperCase());
+}

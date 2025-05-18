@@ -7,9 +7,10 @@ import {
   LinkedEntityProperty,
   getSchema,
 } from '@dotproductdev/voyages-contribute';
-import { Button} from 'antd';
+import { Button} from '@mui/material';
 import { useCallback,  useMemo,  } from 'react';
 import { EntityForm, EntityFormProps } from './EntityForm';
+import '@/style/contributeContent.scss';
 
 export interface LinkedEntityPropertyComponentProps {
   property: LinkedEntityProperty;
@@ -105,21 +106,48 @@ export const LinkedEntityOwnedPropertyComponent = ({
   return (
     <>
       {value ? (
-        <Button onClick={handleClear}>Clear</Button>
+        <Button 
+        onClick={handleClear} 
+        variant="outlined"
+        size="small"
+        sx={{
+          cursor: 'pointer',
+          textTransform: 'unset',
+          height: 32,
+          fontSize: '0.85rem',
+          width: 50, 
+          borderColor: 'rgb(55, 148, 141)',
+          color: 'rgb(55, 148, 141)'
+        }}
+        >Clear</Button>
       ) : (
-        <Button onClick={handleSet}>Set</Button>
+        <Button onClick={handleSet}   
+          variant="outlined"
+        size="small"
+         sx={{
+          cursor: 'pointer',
+          textTransform: 'unset',
+          height: 32,
+          fontSize: '0.85rem',
+          width: 50,  
+          borderColor: 'rgb(55, 148, 141)',
+          color: 'rgb(55, 148, 141)'
+        }}>Set</Button>
       )}
       {value && (
-        <div style={{ marginLeft: '24px' }}>
-          <EntityForm
-            key={value.entityRef.id}
-            {...other}
-            changes={localChanges}
-            schema={schema}
-            entity={value}
-            onChange={handleChanges}
-          />
-        </div>
+       <div style={{ marginLeft: '20px' }}>
+       <div className="date-fields-container">
+         <EntityForm
+           key={value.entityRef.id}
+           {...other}
+           changes={localChanges}
+           schema={schema}
+           entity={value}
+           onChange={handleChanges}
+         />
+       </div>
+     </div>
+     
       )}
     </>
   );
