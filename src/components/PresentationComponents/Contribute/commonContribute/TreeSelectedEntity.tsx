@@ -5,6 +5,7 @@ import { MaterializedEntity, LinkedEntitySelectionChange } from '@dotproductdev/
 import { convertToTreeSelectFormat, TreeSelectNode } from './convertToTreeSelectFormat';
 import { ContribuitLocation } from '@/share/InterfaceTypes';
 import '@/style/page.scss';
+import { lowerCaseFirstLetter } from '../DirectEntityPropertyField';
 
 type SafeKey = string | number;
 
@@ -106,7 +107,7 @@ const TreeSelectedEntity: React.FC<TheeSelectedEntityProps> = ({
   const treeSelectProps: ExtendedTreeSelectProps = {
     className: lastChange ? 'changedEntityProperty' : undefined,
     value: value ? String(value.entityRef.id) : undefined,
-    placeholder: `Please select ${label}`,
+    placeholder: `Select ${lowerCaseFirstLetter(label)}`,
     style: { width: 'calc(100% - 20px)' },
     onChange: handleChange,
     showSearch: true,
