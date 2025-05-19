@@ -66,7 +66,7 @@ export const EntityTableView = ({
       );
       for (const m of added) {
         const item = m.ownedEntity
-        applyUpdate(item, m.changes);
+        // applyUpdate(item, m.changes);
         res.push(item);
       }
     }
