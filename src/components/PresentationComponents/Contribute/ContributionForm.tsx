@@ -10,7 +10,7 @@ import {
   Modal,
   Typography,
 } from 'antd';
-import { useCallback, useEffect, useState } from 'react';
+import { CSSProperties, useCallback, useEffect, useState } from 'react';
 import {
   addToChangeSet,
   combineChanges,
@@ -36,13 +36,15 @@ import PreviewChangeDialog from './PreviewChange/PreviewChangeDialog';
 
 const { Text } = Typography;
 
+export const ContributionSectionStyle: CSSProperties = {
+  height: 'calc(100vh - 160px)',
+  scrollSnapAlign: 'start',
+};
 
 export const ContributionForm = ({
   entity,
-  height,
 }: {
   entity: MaterializedEntity;
-  height: number;
 }) => {
   const [contributeForm] = Form.useForm();
   const schema = getSchema(entity.entityRef.schema);
@@ -235,46 +237,55 @@ export const ContributionForm = ({
   };
 
   return (
-    <Form
-      form={contributeForm}
-      layout="vertical"
-      onFinish={submitChanges}
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: `${height}vh`,
-      }}
-    >
-      {/* Top Form - Contribution Details */}
-      <Card
-        title="Contribution Details"
-        style={{ flexShrink: 0 }}
-        styles={{ body: { padding: '10px 16px' } }}
+    <>
+      <Form
+        form={contributeForm}
+        layout="vertical"
+        onFinish={submitChanges}
+        style={{
+          ...ContributionSectionStyle,
+          display: 'flex',
+          flexDirection: 'column',
+          padding: 0,
+        }}
       >
-        <Row gutter={6}>
-          <Col span={12}>
-            <Form.Item label="Contribution Title" name="title">
-              <Input />
-            </Form.Item>
-            <Form.Item label="Contribution Message" name="comments">
-              <Input.TextArea rows={4} />
-            </Form.Item>
-          </Col>
-          <Col span={12}>
-            <Form.Item label="Contributor Mode" name="accessLevel">
-              <Select options={accessLevelOptions} style={{ width: '100%' }} />
-            </Form.Item>
-            <Row style={{ justifyContent: 'center' }}>
-              <Form.Item label=" " colon={false}>
-                <Button className='button-reset-contribute' block onClick={handlePreviewChanges}>
-                  Preview Changes
-                </Button>
+        {/* Top Form - Contribution Details */}
+        <Card
+          title="Contribution Details"
+          style={{ flexShrink: 0 }}
+          styles={{ body: { padding: '10px 16px' } }}
+        >
+          <Row gutter={6}>
+            <Col span={12}>
+              <Form.Item label="Contribution Title" name="title">
+                <Input />
               </Form.Item>
-            </Row>
-          </Col>
-        </Row>
-      </Card>
-
+              <Form.Item label="Contribution Message" name="comments">
+                <Input.TextArea rows={4} />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item label="Contributor Mode" name="accessLevel">
+                <Select
+                  options={accessLevelOptions}
+                  style={{ width: '100%' }}
+                />
+              </Form.Item>
+              <Row style={{ justifyContent: 'center' }}>
+                <Form.Item label=" " colon={false}>
+                  <Button
+                    className="button-reset-contribute"
+                    block
+                    onClick={handlePreviewChanges}
+                  >
+                    Preview Changes
+                  </Button>
+                </Form.Item>
+              </Row>
+            </Col>
+          </Row>
+        </Card>
+      </Form>
       {/* Middle Section */}
       <Row
         style={{
@@ -282,7 +293,7 @@ export const ContributionForm = ({
           flex: 1,
           overflow: 'hidden',
           gap: '4px',
-          padding: '12px 0',
+          ...ContributionSectionStyle
         }}
       >
         <Col
@@ -295,7 +306,12 @@ export const ContributionForm = ({
           }}
         >
           <Card
-            style={{ flex: 1, overflow: 'hidden' }}
+            style={{
+              flex: 1,
+              overflow: 'auto',
+              flexDirection: 'column',
+              display: 'flex',
+            }}
             styles={{
               body: {
                 padding: 8,
@@ -324,7 +340,6 @@ export const ContributionForm = ({
                 overflowY: 'auto',
                 padding: 4,
                 flex: 1,
-                maxHeight: '80vh',
               }}
             >
               <EntityForm
@@ -415,12 +430,12 @@ export const ContributionForm = ({
           </Box>
         </Col>
       </Row>
-      <PreviewChangeDialog 
-      previewEntity={previewEntity}
-      open={previewEntity !== undefined}
-      onClose={() => setPreviewEntity(undefined)}
+      <PreviewChangeDialog
+        previewEntity={previewEntity}
+        open={previewEntity !== undefined}
+        onClose={() => setPreviewEntity(undefined)}
       />
-    </Form>
+    </>
   );
 };
 
