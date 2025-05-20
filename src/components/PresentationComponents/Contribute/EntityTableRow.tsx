@@ -83,7 +83,7 @@ export const EntityTableRow = ({
       }
       if (!areMatch(c.entityRef, entity.entityRef)) {
         alert('Unexpected entityRef in nested table entry!');
-        return
+        return;
       }
       const prev = change.modified.find((m) =>
         areMatch(m.ownedEntity.entityRef, c.entityRef),
@@ -180,7 +180,11 @@ export const EntityTableRow = ({
           scope="row"
           sx={{ fontWeight: 500, color: '#333' }}
         >
-          {schema.getLabel(updatedEntity.data)}
+          <span
+            dangerouslySetInnerHTML={{
+              __html: schema.getLabel(updatedEntity.data),
+            }}
+          ></span>
         </TableCell>
         <TableCell align="right">
           <IconButton

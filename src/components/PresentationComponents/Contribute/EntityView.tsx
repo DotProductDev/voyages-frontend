@@ -52,6 +52,7 @@ export const EntityView = ({
               <Box key={key} sx={{ mb: 1 }}>
                 <Typography variant="body2">
                   <strong>{formatLabel(key)}:</strong>{' '}
+                </Typography>
                   {isMaterializedEntity(value) ? (
                     <Box
                       sx={{
@@ -84,7 +85,6 @@ export const EntityView = ({
                   ) : (
                     <span>{value ?? '—'}</span>
                   )}
-                </Typography>
               </Box>
             ))}
         </Box>

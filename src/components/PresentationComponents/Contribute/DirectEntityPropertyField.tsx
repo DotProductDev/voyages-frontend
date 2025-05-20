@@ -7,7 +7,7 @@ import {
   PropertyValue,
 } from '@dotproductdev/voyages-contribute';
 import { Input } from 'antd';
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, ChangeEvent } from 'react';
 import { EntityFormProps } from './EntityForm';
 import { EntityPropertyChangeCommentBox } from './EntityPropertyChangeCommentBox';
 import { Checkbox } from '@mui/material';
@@ -50,7 +50,7 @@ export const DirectEntityPropertyField = ({
             kind: 'direct',
             property: property.uid,
             changed,
-            original: entity.data[label] as PropertyValue ?? undefined,
+            original: (entity.data[label] as PropertyValue) ?? undefined,
             comments,
           },
         ],
@@ -76,6 +76,17 @@ export const DirectEntityPropertyField = ({
     );
   }
 
+  const handleInputChange = useCallback(
+    (e: ChangeEvent<HTMLInputElement>) => {
+      let localValue: string | number = e.target.value;
+      if (kind === 'number' && typeof localValue === 'string') {
+        localValue = parseFloat(localValue);
+      }
+      handleChange(localValue);
+    },
+    [handleChange, kind],
+  );
+
   return (
     <>
       {kind === 'bool' ? (
@@ -89,10 +100,8 @@ export const DirectEntityPropertyField = ({
           type={kind}
           placeholder={`Enter ${lowerCaseFirstLetter(label)}`}
           style={{ width: 'calc(100% - 20px)' }}
-          value={value + ''}
-          onChange={(e: any) => {
-            handleChange(e.target.value);
-          }}
+          value={value === null ? '' : value + ''}
+          onChange={handleInputChange}
         />
       )}
       <EntityPropertyChangeCommentBox

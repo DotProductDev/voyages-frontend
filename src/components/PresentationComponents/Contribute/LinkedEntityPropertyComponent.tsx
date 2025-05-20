@@ -5,14 +5,17 @@ import {
   EntityLinkEditMode,
   LinkedEntityProperty,
   getSchema,
-  cloneEntity, applyUpdate
+  cloneEntity,
+  applyUpdate,
 } from '@dotproductdev/voyages-contribute';
 import { Alert, Select, Spin, Tooltip } from 'antd';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { EntityFormProps } from './EntityForm';
 import { EntityPropertyChangeCommentBox } from './EntityPropertyChangeCommentBox';
 import { useSchemaEnumeration } from '@/hooks/useEnumeration';
-import TreeSelectedEntity from './commonContribute/TreeSelectedEntity';
+import TreeSelectedEntity, {
+  TreeSelectedEntityProps,
+} from './commonContribute/TreeSelectedEntity';
 import { LinkedEntityOwnedPropertyComponent } from './LinkedEntityOwnedPropertyComponent';
 import { useTreeSelectContributeLocation } from '@/hooks/useTreeSelectContributeLocation';
 import '@/style/contributeContent.scss';
@@ -27,10 +30,30 @@ export interface LinkedEntityPropertyComponentProps {
   onChange: EntityFormProps['onChange'];
 }
 
+const LinkedLocationComponent = (
+  props: Omit<TreeSelectedEntityProps, 'locationsList'>,
+) => {
+  const { locationsList, loading, error } = useTreeSelectContributeLocation({
+    expirationSeconds: 300,
+  });
+  if (loading) {
+    return (
+      <Spin spinning={true} tip="Loading location tree...">
+        <div style={{ minHeight: 60 }} />
+      </Spin>
+    );
+  }
+
+  if (error) {
+    return <Alert type="error" message="Failed to load location data." />;
+  }
+
+  return <TreeSelectedEntity {...props} locationsList={locationsList} />;
+};
+
 export const LinkedEntityPropertyComponent = (
   props: LinkedEntityPropertyComponentProps & EntityFormProps,
 ) => {
-
   const { property, entity, lastChange, onChange } = props;
   const [comments, setComments] = useState<string | undefined>();
   const { uid, mode, label, linkedEntitySchema } = property;
@@ -49,12 +72,6 @@ export const LinkedEntityPropertyComponent = (
   const linkedSchema = getSchema(linkedEntitySchema);
   const { items: optionItems } = useSchemaEnumeration(linkedEntitySchema);
 
-  const { locationsList, loading, error } = useTreeSelectContributeLocation(
-    {
-      expirationSeconds: 300,
-    },
-  );
-
   const debouncedLastChange = useDebounce(lastChange, 800);
 
   const options = useMemo(() => {
@@ -65,8 +82,11 @@ export const LinkedEntityPropertyComponent = (
     }));
 
     if (debouncedLastChange?.changed?.entityRef.type === 'new') {
-      const updatedLinkedEntity = debouncedLastChange.linkedChanges 
-        ? applyUpdate(cloneEntity(debouncedLastChange.changed), debouncedLastChange.linkedChanges)
+      const updatedLinkedEntity = debouncedLastChange.linkedChanges
+        ? applyUpdate(
+            cloneEntity(debouncedLastChange.changed),
+            debouncedLastChange.linkedChanges,
+          )
         : debouncedLastChange.changed;
       res.push({
         label: linkedSchema.getLabel(updatedLinkedEntity.data, true),
@@ -77,7 +97,6 @@ export const LinkedEntityPropertyComponent = (
     return res;
   }, [optionItems, debouncedLastChange]);
 
-
   const handleChange = useCallback(
     (item: string | number | null) => {
       if (item == null) return;
@@ -86,12 +105,14 @@ export const LinkedEntityPropertyComponent = (
       if (item === currentId && comments === lastChange?.comments) {
         return;
       }
-      const matchedOption = options.find((x) => String(x.value) === String(item));
+      const matchedOption = options.find(
+        (x) => String(x.value) === String(item),
+      );
       if (!matchedOption) {
         console.warn('No matching option found for item:', item);
         return;
       }
-      
+
       onChange({
         type: 'update',
         entityRef: entity.entityRef,
@@ -113,55 +134,56 @@ export const LinkedEntityPropertyComponent = (
         ],
       });
     },
-    [onChange, entity, property, comments, lastChange, value, options, uid, linkedEntitySchema]
+    [
+      onChange,
+      entity,
+      property,
+      comments,
+      lastChange,
+      value,
+      options,
+      uid,
+      linkedEntitySchema,
+    ],
   );
 
-  // useEffect only if external `value` updates should trigger a change
+  // Trigger a change if the comments have been updated.
   useEffect(() => {
     handleChange(value?.entityRef.id ?? null);
-  }, [handleChange, value]);
+  }, [handleChange, value, comments]);
 
-  const styledOptions = options.map((opt) => ({
-    ...opt,
-    label: (
-      <Tooltip title={opt.label}>
-        <div
-          style={{
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            maxWidth: '400px', // adjust as needed
-          }}
-        >
-          {opt.label}
-        </div>
-      </Tooltip>
-    ),
-  }));
+  const styledOptions = useMemo(
+    () =>
+      options.map((opt) => ({
+        ...opt,
+        label: (
+          <Tooltip title={opt.label}>
+            <div
+              style={{
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                maxWidth: '400px', // adjust as needed
+              }}
+            >
+              {opt.label}
+            </div>
+          </Tooltip>
+        ),
+      })),
+    [options],
+  );
 
   let displaySelected;
 
   if (property.linkedEntitySchema === 'Location') {
-    if (loading) {
-      return (
-        <Spin spinning={true} tip="Loading location tree...">
-          <div style={{ minHeight: 60 }} />
-        </Spin>
-      );
-    }
-
-    if (error) {
-      return <Alert type="error" message="Failed to load location data." />;
-    }
-
     displaySelected = (
-      <TreeSelectedEntity
+      <LinkedLocationComponent
         handleChange={handleChange}
         value={value}
         label={label}
         options={options}
         lastChange={lastChange}
-        locationsList={locationsList}
       />
     );
   } else {
@@ -174,10 +196,12 @@ export const LinkedEntityPropertyComponent = (
         options={styledOptions}
         onChange={handleChange}
         showSearch
-        dropdownStyle={{ maxHeight: 400, overflow: 'auto', zIndex: 9999, }}
+        dropdownStyle={{ maxHeight: 400, overflow: 'auto', zIndex: 9999 }}
         optionLabelProp="label"
         filterOption={(input: string, option: any) =>
-          (option?.label?.props?.title ?? '').toLowerCase().includes(input.toLowerCase())
+          (option?.label?.props?.title ?? '')
+            .toLowerCase()
+            .includes(input.toLowerCase())
         }
       />
     );

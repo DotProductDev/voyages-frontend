@@ -18,11 +18,18 @@ interface NumbersTableDialogProps {
   lastChange?: TableChange;
   onChange: (change: EntityChange) => void;
   onClose: (change: boolean) => void;
-  openDialog: boolean
+  openDialog: boolean;
 }
 
-const NumbersTableDialog: React.FC<NumbersTableDialogProps> = ({ property, entity, lastChange, onChange, onClose, openDialog, ...other }) => {
-
+const NumbersTableDialog: React.FC<NumbersTableDialogProps> = ({
+  property,
+  entity,
+  lastChange,
+  onChange,
+  onClose,
+  openDialog,
+  ...other
+}) => {
   return (
     <Dialog
       open={openDialog}
@@ -42,12 +49,10 @@ const NumbersTableDialog: React.FC<NumbersTableDialogProps> = ({ property, entit
           fontWeight: 600,
           bgcolor: 'rgb(55, 148, 141)',
           color: '#fff',
-          py: "20px",
+          py: '20px',
         }}
       >
-        <div style={{ fontSize: '1rem' }}>
-          Table of  {property.section}
-        </div>
+        <div style={{ fontSize: '1rem' }}>Table of {property.label}</div>
         <IconButton
           edge="end"
           color="inherit"
@@ -67,7 +72,7 @@ const NumbersTableDialog: React.FC<NumbersTableDialogProps> = ({ property, entit
         />
       </DialogContent>
     </Dialog>
-  )
+  );
 };
 
 export default NumbersTableDialog;

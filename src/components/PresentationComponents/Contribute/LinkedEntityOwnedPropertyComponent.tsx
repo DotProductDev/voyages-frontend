@@ -43,7 +43,7 @@ export const LinkedEntityOwnedPropertyComponent = ({
             },
           ]
         : [],
-    [changes, value, entity],
+    [value, lastChange],
   );
   const handleClear = useCallback(() => {
     if (value === null) {

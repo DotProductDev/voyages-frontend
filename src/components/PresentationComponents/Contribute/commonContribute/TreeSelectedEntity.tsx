@@ -19,7 +19,7 @@ interface optionsProps {
   entity: MaterializedEntity;
 }
 
-interface TheeSelectedEntityProps {
+export interface TreeSelectedEntityProps {
   handleChange: (item: string | number | null) => void;
   value: MaterializedEntity | null;
   label: string;
@@ -28,7 +28,7 @@ interface TheeSelectedEntityProps {
   locationsList: ContribuitLocation[];
 }
 
-const TreeSelectedEntity: React.FC<TheeSelectedEntityProps> = ({
+const TreeSelectedEntity: React.FC<TreeSelectedEntityProps> = ({
   handleChange,
   value,
   label,

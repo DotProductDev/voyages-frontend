@@ -1,5 +1,4 @@
 import {
-  Button,
   CollapseProps,
   Form,
   Row,
@@ -30,8 +29,6 @@ import { RootState } from '@/redux/store';
 import { translationLanguagesContribute } from '@/utils/functions/translationLanguages';
 import { EntityForm } from './EntityForm';
 import ChangesSummary from './ChangesSummary';
-import { footerStyle } from '@/styleMUI';
-import { Box, Dialog } from '@mui/material';
 import PreviewChangeDialog from './PreviewChange/PreviewChangeDialog';
 
 const { Text } = Typography;
@@ -40,6 +37,36 @@ export const ContributionSectionStyle: CSSProperties = {
   height: 'calc(100vh - 160px)',
   scrollSnapAlign: 'start',
 };
+
+function combineOwnedChanges(changes: PropertyChange[]): PropertyChange[] {
+  const seen: Record<string, PropertyChange> = {};
+
+  changes.forEach((change) => {
+    seen[change.property] = change; // overwrite old with new
+  });
+
+  return Object.values(seen);
+}
+
+function combineEntityChanges(changes: EntityChange[]): EntityChange[] {
+  return changes.map((change) => {
+    if (change.type === 'update') {
+      return {
+        ...change,
+        changes: change.changes.map((propertyChange) => {
+          if (propertyChange.kind === 'owned') {
+            return {
+              ...propertyChange,
+              changes: combineOwnedChanges(propertyChange.changes),
+            };
+          }
+          return propertyChange;
+        }),
+      };
+    }
+    return change;
+  });
+}
 
 export const ContributionForm = ({
   entity,
@@ -91,17 +118,7 @@ export const ContributionForm = ({
       comments: '',
       timestamp: new Date().getTime(),
     });
-  }, [schema, entity]);
-
-  function combineOwnedChanges(changes: PropertyChange[]): PropertyChange[] {
-    const seen: Record<string, PropertyChange> = {};
-
-    changes.forEach((change) => {
-      seen[change.property] = change; // overwrite old with new
-    });
-
-    return Object.values(seen);
-  }
+  }, [schema, contributeForm, entity]);
 
   const onChangesUpdate = useCallback(
     (newChange: EntityChange) =>
@@ -113,26 +130,6 @@ export const ContributionForm = ({
       }),
     [],
   );
-
-  function combineEntityChanges(changes: EntityChange[]): EntityChange[] {
-    return changes.map((change) => {
-      if (change.type === 'update') {
-        return {
-          ...change,
-          changes: change.changes.map((propertyChange) => {
-            if (propertyChange.kind === 'owned') {
-              return {
-                ...propertyChange,
-                changes: combineOwnedChanges(propertyChange.changes),
-              };
-            }
-            return propertyChange;
-          }),
-        };
-      }
-      return change;
-    });
-  }
 
   const handlePreviewChanges = () => {
     const formValues = contributeForm.getFieldsValue();
@@ -247,6 +244,7 @@ export const ContributionForm = ({
           display: 'flex',
           flexDirection: 'column',
           padding: 0,
+          justifyContent: 'space-around',
         }}
       >
         {/* Top Form - Contribution Details */}
@@ -260,28 +258,20 @@ export const ContributionForm = ({
               <Form.Item label="Contribution Title" name="title">
                 <Input />
               </Form.Item>
-              <Form.Item label="Contribution Message" name="comments">
-                <Input.TextArea rows={4} />
-              </Form.Item>
             </Col>
             <Col span={12}>
               <Form.Item label="Contributor Mode" name="accessLevel">
                 <Select
                   options={accessLevelOptions}
-                  style={{ width: '100%' }}
+                  style={{ width: '100%' }} 
+                  onChange={(value: PropertyAccessLevel) => setAccessLevel(value)}
                 />
               </Form.Item>
-              <Row style={{ justifyContent: 'center' }}>
-                <Form.Item label=" " colon={false}>
-                  <Button
-                    className="button-reset-contribute"
-                    block
-                    onClick={handlePreviewChanges}
-                  >
-                    Preview Changes
-                  </Button>
-                </Form.Item>
-              </Row>
+            </Col>
+            <Col span={24}>
+              <Form.Item label="Contribution Message" name="comments">
+                <Input.TextArea rows={8} />
+              </Form.Item>
             </Col>
           </Row>
         </Card>
@@ -293,7 +283,7 @@ export const ContributionForm = ({
           flex: 1,
           overflow: 'hidden',
           gap: '4px',
-          ...ContributionSectionStyle
+          ...ContributionSectionStyle,
         }}
       >
         <Col
@@ -337,7 +327,7 @@ export const ContributionForm = ({
             </div>
             <div
               style={{
-                overflowY: 'auto',
+                overflow: 'hidden',
                 padding: 4,
                 flex: 1,
               }}
@@ -410,24 +400,12 @@ export const ContributionForm = ({
                 resetAllChanges={resetAllChanges}
                 submitChanges={submitChanges}
                 handleSaveChanges={submitChanges}
+                handlePreview={handlePreviewChanges}
                 entity={entity}
                 handleDeleteChange={handleDeletePropertyChange}
               />
             </div>
           </Card>
-          <Box sx={footerStyle}>
-            <Row justify="center">
-              <Button
-                style={{ width: 150 }}
-                type="primary"
-                onClick={submitChanges}
-                block
-                disabled={changeSet.changes.length === 0}
-              >
-                Submit Changes
-              </Button>
-            </Row>
-          </Box>
         </Col>
       </Row>
       <PreviewChangeDialog

@@ -6,8 +6,9 @@ import {
   areMatch,
   Property,
   EntityUpdate,
-  EntityChange, OwnedEntityChange,
-  EntityOwnedProperty
+  EntityChange,
+  OwnedEntityChange,
+  EntityOwnedProperty,
 } from '@dotproductdev/voyages-contribute';
 import { EntityFormProps, EntityForm } from './EntityForm';
 import { EntityTableView } from './EntityTableView';
@@ -15,7 +16,7 @@ import { DirectEntityPropertyField } from './DirectEntityPropertyField';
 import { LinkedEntityPropertyComponent } from './LinkedEntityPropertyComponent';
 import NumbersTableDialog from './NumbersTableDialog';
 import { useCallback, useMemo, useState } from 'react';
-import { Button } from '@mui/material';
+import { Button } from 'antd';
 
 export interface EntityPropertyComponentProps<TProperty = Property>
   extends EntityFormProps {
@@ -109,6 +110,7 @@ export const EntityPropertyComponent = ({
           schema={getSchema(property.linkedEntitySchema)}
           entity={value}
           parent={entity}
+          lastChange={lastChange}
         />
       );
     } else {
@@ -161,18 +163,14 @@ export const EntityPropertyComponent = ({
       );
     }
     return (
-      <>
+      <div style={{ paddingTop: '4px' }}>
         <Button
-          className="button-save-contribute"
-          sx={{
-            cursor: 'pointer',
-            textTransform: 'unset',
-            height: 32,
-            fontSize: '0.85rem',
-          }}
+          variant="outlined"
           onClick={() => setOpenNumbersTableDialog(true)}
         >
-          Show Table
+          <span>
+            Show Table&nbsp;<i>{property.label}</i>
+          </span>
         </Button>
         <NumbersTableDialog
           property={property}
@@ -182,7 +180,7 @@ export const EntityPropertyComponent = ({
           onClose={handleOnCloseNumbersTableDialog}
           openDialog={isOpenNumbersTableDialog}
         />
-      </>
+      </div>
     );
   }
   if (kind === 'ownedEntityList') {
