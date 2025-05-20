@@ -264,6 +264,7 @@ export const ContributionForm = ({
                 <Select
                   options={accessLevelOptions}
                   style={{ width: '100%' }} 
+                  value={accessLevel}
                   onChange={(value: PropertyAccessLevel) => setAccessLevel(value)}
                 />
               </Form.Item>
