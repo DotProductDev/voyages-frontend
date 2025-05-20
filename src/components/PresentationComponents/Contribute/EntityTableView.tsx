@@ -1,13 +1,11 @@
 import {
-  applyUpdate,
   isMaterializedEntityArray,
   MaterializedEntity,
   getSchema,
   materializeNew,
   areMatch,
   OwnedEntityListChange,
-  OwnedEntityListProperty,
-  expandMaterialized,
+  OwnedEntityListProperty
 } from '@dotproductdev/voyages-contribute';
 import {
   IconButton,
@@ -64,11 +62,7 @@ export const EntityTableView = ({
           m.ownedEntity.entityRef.type === 'new' &&
           !res.find((e) => areMatch(m.ownedEntity.entityRef, e.entityRef)),
       );
-      for (const m of added) {
-        const item = m.ownedEntity
-        // applyUpdate(item, m.changes);
-        res.push(item);
-      }
+      res.push(...added.map((m) => m.ownedEntity));
     }
     // Make sure that the order in which the rows appear is consistent.
     res.sort((x, y) => {

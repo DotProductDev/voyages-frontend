@@ -5,6 +5,7 @@ import {
   EntityLinkEditMode,
   LinkedEntityProperty,
   getSchema,
+  cloneEntity, applyUpdate
 } from '@dotproductdev/voyages-contribute';
 import { Alert, Select, Spin, Tooltip } from 'antd';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -17,6 +18,7 @@ import { useTreeSelectContributeLocation } from '@/hooks/useTreeSelectContribute
 import '@/style/contributeContent.scss';
 import LinkedEntityAddNewDialogComponent from './LinkedEntityAddNewDialogComponent';
 import { lowerCaseFirstLetter } from './DirectEntityPropertyField';
+import { useDebounce } from '@/hooks/useDebounce';
 
 export interface LinkedEntityPropertyComponentProps {
   property: LinkedEntityProperty;
@@ -53,6 +55,8 @@ export const LinkedEntityPropertyComponent = (
     },
   );
 
+  const debouncedLastChange = useDebounce(lastChange, 800);
+
   const options = useMemo(() => {
     const res = optionItems.map((entity) => ({
       label: linkedSchema.getLabel(entity.data, true),
@@ -60,15 +64,18 @@ export const LinkedEntityPropertyComponent = (
       entity,
     }));
 
-    if (lastChange?.changed?.entityRef.type === 'new') {
+    if (debouncedLastChange?.changed?.entityRef.type === 'new') {
+      const updatedLinkedEntity = debouncedLastChange.linkedChanges 
+        ? applyUpdate(cloneEntity(debouncedLastChange.changed), debouncedLastChange.linkedChanges)
+        : debouncedLastChange.changed;
       res.push({
-        label: linkedSchema.getLabel(lastChange.changed.data, true),
-        value: lastChange.changed.entityRef.id,
-        entity: lastChange.changed,
+        label: linkedSchema.getLabel(updatedLinkedEntity.data, true),
+        value: debouncedLastChange.changed.entityRef.id,
+        entity: updatedLinkedEntity,
       });
     }
     return res;
-  }, [optionItems, lastChange?.changed]);
+  }, [optionItems, debouncedLastChange]);
 
 
   const handleChange = useCallback(

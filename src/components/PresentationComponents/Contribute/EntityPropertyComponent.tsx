@@ -6,26 +6,82 @@ import {
   areMatch,
   Property,
   EntityUpdate,
+  EntityChange, OwnedEntityChange,
+  EntityOwnedProperty
 } from '@dotproductdev/voyages-contribute';
 import { EntityFormProps, EntityForm } from './EntityForm';
 import { EntityTableView } from './EntityTableView';
 import { DirectEntityPropertyField } from './DirectEntityPropertyField';
 import { LinkedEntityPropertyComponent } from './LinkedEntityPropertyComponent';
 import NumbersTableDialog from './NumbersTableDialog';
-import { useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Button } from '@mui/material';
 
-export interface EntityPropertyComponentProps extends EntityFormProps {
-  property: Property;
+export interface EntityPropertyComponentProps<TProperty = Property>
+  extends EntityFormProps {
+  property: TProperty;
   entity: MaterializedEntity;
 }
+
+const EntityOwnedForm = ({
+  parent,
+  entity,
+  property,
+  onChange,
+  lastChange,
+  ...other
+}: EntityPropertyComponentProps<EntityOwnedProperty> & {
+  parent: MaterializedEntity;
+  lastChange?: OwnedEntityChange;
+}) => {
+  const changes: EntityChange[] = useMemo(
+    () =>
+      lastChange
+        ? [
+            {
+              entityRef: lastChange.ownedEntity.entityRef,
+              type: 'update',
+              changes: lastChange.changes,
+            },
+          ]
+        : [],
+    [lastChange],
+  );
+  const handleChange = useCallback(
+    (c: EntityChange) => {
+      c.type === 'update' &&
+        onChange({
+          type: 'update',
+          entityRef: parent.entityRef,
+          changes: [
+            {
+              property: property.uid,
+              kind: 'owned',
+              ownedEntity: entity,
+              changes: c.changes,
+            },
+          ],
+        });
+    },
+    [entity, property.uid, parent.entityRef, onChange],
+  );
+  return (
+    <EntityForm
+      key={entity.entityRef.id}
+      {...other}
+      changes={changes}
+      onChange={handleChange}
+      schema={getSchema(property.linkedEntitySchema)}
+      entity={entity}
+    />
+  );
+};
 
 export const EntityPropertyComponent = ({
   property,
   entity,
   ...other
 }: EntityPropertyComponentProps) => {
-
   const { uid, kind } = property;
 
   const localChanges = other.changes.find(
@@ -33,8 +89,9 @@ export const EntityPropertyComponent = ({
       isUpdateEntityChange(ec) && areMatch(ec.entityRef, entity.entityRef),
   ) as EntityUpdate | undefined;
   const lastChange = localChanges?.changes.find((c) => c.property === uid);
-  const [isOpenNumbersTableDialog, setOpenNumbersTableDialog] = useState(false)
-  const handleOnCloseNumbersTableDialog = ()=> setOpenNumbersTableDialog(false)
+  const [isOpenNumbersTableDialog, setOpenNumbersTableDialog] = useState(false);
+  const handleOnCloseNumbersTableDialog = () =>
+    setOpenNumbersTableDialog(false);
   if (kind === 'entityOwned') {
     const value = entity.data[property.label];
     if (lastChange && lastChange.kind !== 'owned') {
@@ -45,38 +102,13 @@ export const EntityPropertyComponent = ({
       value.entityRef.schema === property.linkedEntitySchema
     ) {
       return (
-        <EntityForm
+        <EntityOwnedForm
           key={entity.entityRef.id}
           {...other}
-          changes={
-            lastChange
-              ? [
-                  {
-                    entityRef: lastChange.ownedEntity.entityRef,
-                    type: 'update',
-                    changes: lastChange.changes,
-                  },
-                ]
-              : []
-          }
-           onChange={(c) =>{
-            return c.type === 'update' &&
-            other.onChange({
-              type: 'update',
-              entityRef: entity.entityRef,
-              changes: [
-                {
-                  property: property.uid,
-                  kind: 'owned',
-                  ownedEntity: value,
-                  changes: c.changes,
-                },
-              ],
-            })
-          }
-          }
+          property={property}
           schema={getSchema(property.linkedEntitySchema)}
           entity={value}
+          parent={entity}
         />
       );
     } else {
@@ -130,24 +162,27 @@ export const EntityPropertyComponent = ({
     }
     return (
       <>
-      <Button 
-      className="button-save-contribute"
-      sx={{
-        cursor: 'pointer',
-        textTransform: 'unset',
-        height: 32,
-        fontSize: '0.85rem',
-      }}
-      onClick={()=> setOpenNumbersTableDialog(true)}>Show Table</Button>
-      <NumbersTableDialog 
-        property={property}
-        entity={entity}
-        lastChange={lastChange}
-        {...other}
-        onClose={handleOnCloseNumbersTableDialog}
-        openDialog={isOpenNumbersTableDialog}
+        <Button
+          className="button-save-contribute"
+          sx={{
+            cursor: 'pointer',
+            textTransform: 'unset',
+            height: 32,
+            fontSize: '0.85rem',
+          }}
+          onClick={() => setOpenNumbersTableDialog(true)}
+        >
+          Show Table
+        </Button>
+        <NumbersTableDialog
+          property={property}
+          entity={entity}
+          lastChange={lastChange}
+          {...other}
+          onClose={handleOnCloseNumbersTableDialog}
+          openDialog={isOpenNumbersTableDialog}
         />
-    </>
+      </>
     );
   }
   if (kind === 'ownedEntityList') {

@@ -18,6 +18,7 @@ import { Delete, Restore } from '@mui/icons-material';
 import { EntityForm, EntityFormProps } from './EntityForm';
 import { KeyboardArrowUp, KeyboardArrowDown } from '@mui/icons-material';
 import { createEmptyChange } from './EntityTableView';
+import { useDebounce } from '@/hooks/useDebounce';
 
 interface EntityTableRowProps {
   schema: EntitySchema;
@@ -139,20 +140,16 @@ export const EntityTableRow = ({
       ? '#e8f5e9'
       : '#f9f9f9';
 
+  const debouncedPropChanges = useDebounce(rowPropChanges, 800);
+
   const updatedEntity = useMemo(() => {
     let e = entity;
-    if (rowPropChanges.length > 0) {
-      try {
-        e = cloneEntity(entity);
-        applyUpdate(e, rowPropChanges);
-      } catch {
-        // DEBUG MODE:
-        e = entity;
-        console.dir(e);
-      }
+    if (debouncedPropChanges.length > 0) {
+      e = cloneEntity(entity);
+      applyUpdate(e, debouncedPropChanges);
     }
     return e;
-  }, [entity, rowPropChanges]);
+  }, [entity, debouncedPropChanges]);
 
   return (
     <React.Fragment>
