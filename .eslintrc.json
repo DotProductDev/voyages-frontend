@@ -52,7 +52,11 @@
     "unused-imports"
   ],
   "rules": {
-    "prettier/prettier": ["error", { "tabWidth": 2, "useTabs": false }],
+    "linebreak-style": "off",
+    "prettier/prettier": [
+      "error",
+      { "tabWidth": 2, "useTabs": false, "endOfLine": "auto" }
+    ],
     "react/react-in-jsx-scope": "off",
     "react/prop-types": "off",
     "react-hooks/rules-of-hooks": "error",

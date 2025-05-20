@@ -1,15 +1,5 @@
-import {
-  CollapseProps,
-  Form,
-  Row,
-  Col,
-  Input,
-  Select,
-  Card,
-  Modal,
-  Typography,
-} from 'antd';
 import { CSSProperties, useCallback, useEffect, useState } from 'react';
+
 import {
   addToChangeSet,
   combineChanges,
@@ -24,11 +14,24 @@ import {
   PropertyAccessLevel,
   PropertyChange,
 } from '@dotproductdev/voyages-contribute';
+import {
+  CollapseProps,
+  Form,
+  Row,
+  Col,
+  Input,
+  Select,
+  Card,
+  Modal,
+  Typography,
+} from 'antd';
 import { useSelector } from 'react-redux';
+
 import { RootState } from '@/redux/store';
 import { translationLanguagesContribute } from '@/utils/functions/translationLanguages';
-import { EntityForm } from './EntityForm';
+
 import ChangesSummary from './ChangesSummary';
+import { EntityForm } from './EntityForm';
 import PreviewChangeDialog from './PreviewChange/PreviewChangeDialog';
 
 const { Text } = Typography;
@@ -199,8 +202,7 @@ export const ContributionForm = ({
                   Array.isArray(propChange.changes)
                 ) {
                   const filteredFieldChanges = propChange.changes.filter(
-                    (fieldChange: any) =>
-                      fieldChange?.property !== propertyToDelete,
+                    (fieldChange) => fieldChange?.property !== propertyToDelete,
                   );
 
                   if (filteredFieldChanges.length === 0) return null;
@@ -263,9 +265,11 @@ export const ContributionForm = ({
               <Form.Item label="Contributor Mode" name="accessLevel">
                 <Select
                   options={accessLevelOptions}
-                  style={{ width: '100%' }} 
+                  style={{ width: '100%' }}
                   value={accessLevel}
-                  onChange={(value: PropertyAccessLevel) => setAccessLevel(value)}
+                  onChange={(value: PropertyAccessLevel) =>
+                    setAccessLevel(value)
+                  }
                 />
               </Form.Item>
             </Col>

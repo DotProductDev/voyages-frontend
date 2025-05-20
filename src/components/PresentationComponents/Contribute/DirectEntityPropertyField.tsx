@@ -1,3 +1,5 @@
+import { useState, useCallback } from 'react';
+
 import {
   DirectPropertyChange,
   MaterializedEntity,
@@ -5,12 +7,15 @@ import {
   NumberProperty,
   BoolProperty,
   PropertyValue,
+  VoyageSourceSchema,
 } from '@dotproductdev/voyages-contribute';
+import { Checkbox } from '@mui/material';
 import { Input } from 'antd';
-import { useState, useCallback, ChangeEvent } from 'react';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
+
 import { EntityFormProps } from './EntityForm';
 import { EntityPropertyChangeCommentBox } from './EntityPropertyChangeCommentBox';
-import { Checkbox } from '@mui/material';
 
 export interface DirectEntityPropertyFieldProps {
   property: TextProperty | NumberProperty | BoolProperty;
@@ -21,6 +26,12 @@ export interface DirectEntityPropertyFieldProps {
 
 export const lowerCaseFirstLetter = (s: string) =>
   s.length > 0 ? s[0].toLocaleLowerCase() + s.slice(1) : s;
+
+const htmlProps = [
+  VoyageSourceSchema.properties.find(
+    (p) => p.kind === 'text' && p.backingField === 'bib',
+  ),
+];
 
 export const DirectEntityPropertyField = ({
   property,
@@ -56,14 +67,34 @@ export const DirectEntityPropertyField = ({
         ],
       });
     },
-    [onChange, entity, property, lastChange, value, comments],
+    [
+      lastChange?.changed,
+      lastChange?.comments,
+      value,
+      comments,
+      onChange,
+      entity.entityRef,
+      entity.data,
+      property.uid,
+      label,
+    ],
   );
   const setComments = useCallback(
     (c: string) => {
-      setComments(c);
+      internalSetComments(c);
       handleChange(value);
     },
     [handleChange, value],
+  );
+
+  const handleInputChange = useCallback(
+    (localValue: string | number) => {
+      if (kind === 'number' && typeof localValue === 'string') {
+        localValue = parseFloat(localValue);
+      }
+      handleChange(localValue);
+    },
+    [handleChange, kind],
   );
   if (
     value !== null &&
@@ -76,23 +107,18 @@ export const DirectEntityPropertyField = ({
     );
   }
 
-  const handleInputChange = useCallback(
-    (e: ChangeEvent<HTMLInputElement>) => {
-      let localValue: string | number = e.target.value;
-      if (kind === 'number' && typeof localValue === 'string') {
-        localValue = parseFloat(localValue);
-      }
-      handleChange(localValue);
-    },
-    [handleChange, kind],
-  );
-
   return (
     <>
       {kind === 'bool' ? (
         <Checkbox
           value={value}
           onChange={(e) => handleChange(e.target.checked)}
+        />
+      ) : htmlProps.includes(property) ? (
+        <ReactQuill
+          style={{ width: 'calc(100% - 20px)' }}
+          value={String(value ?? '')}
+          onChange={(v) => handleInputChange(v)}
         />
       ) : (
         <Input
@@ -101,7 +127,7 @@ export const DirectEntityPropertyField = ({
           placeholder={`Enter ${lowerCaseFirstLetter(label)}`}
           style={{ width: 'calc(100% - 20px)' }}
           value={value === null ? '' : value + ''}
-          onChange={handleInputChange}
+          onChange={(e) => handleInputChange(e.target.value)}
         />
       )}
       <EntityPropertyChangeCommentBox
