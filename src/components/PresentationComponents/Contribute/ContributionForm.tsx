@@ -24,6 +24,7 @@ import {
   Card,
   Modal,
   Typography,
+  Button,
 } from 'antd';
 import { useSelector } from 'react-redux';
 
@@ -324,11 +325,11 @@ export const ContributionForm = ({
               }}
             >
               <Text strong>{translatedcontribute.titleCollaps}</Text>
-              <a onClick={toggleExpandAll} style={{ marginLeft: 12 }}>
+              <Button onClick={toggleExpandAll} style={{ marginLeft: 12 }}>
                 {globalExpand
                   ? translatedcontribute.collapse
                   : translatedcontribute.expand}
-              </a>
+              </Button>
             </div>
             <div
               style={{

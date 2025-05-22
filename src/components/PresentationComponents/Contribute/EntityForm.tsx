@@ -1,15 +1,16 @@
+import React, { ReactNode, useMemo, useEffect } from 'react';
+
 import {
   EntityChange,
   EntitySchema,
   MaterializedEntity,
   PropertyAccessLevel,
 } from '@dotproductdev/voyages-contribute';
-import {  CollapseProps, Form, Typography } from 'antd';
-import React, { ReactNode, useMemo, useEffect } from 'react';
-import { EntityPropertyComponent } from './EntityPropertyComponent';
+import { CollapseProps, Form, Typography } from 'antd';
+
 import { StyledCollapse } from '@/styleMUI/stylesMenu/styleCollapse';
 
-
+import { EntityPropertyComponent } from './EntityPropertyComponent';
 
 export interface ContributionFormProps {
   entity: MaterializedEntity;
@@ -134,16 +135,16 @@ export const EntityForm = ({
           <div key={`ungrouped-${index}`}>{item}</div>
         ))}
       {sections.length > 0 && (
-          <StyledCollapse
-            activeKey={expandedMenu}
-            onChange={(keys) => {
-              setExpandedMenu(keys as string[]);
-            }}
-            bordered={false}
-            items={sections}
-            ghost
-            className="custom-collapse"
-          />
+        <StyledCollapse
+          activeKey={expandedMenu}
+          onChange={(keys) => {
+            setExpandedMenu(keys as string[]);
+          }}
+          bordered={false}
+          items={sections}
+          ghost
+          className="custom-collapse"
+        />
       )}
     </>
   );
@@ -154,7 +155,9 @@ const addLabel = (item: ReactNode, label: string) => {
     <Form.Item
       label={<span className="form-contribute-label">{label}</span>}
       name={label}
-      style={{ marginBottom: 0 }}
+      style={{ margin: '6px 4px 6px 0px' }}
+      // labelCol={{ span: 8 }}
+      // wrapperCol={{ span: 16 }}
     >
       {item}
     </Form.Item>

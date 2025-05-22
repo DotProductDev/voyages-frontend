@@ -1,3 +1,5 @@
+import { useCallback, useMemo, useState } from 'react';
+
 import {
   MaterializedEntity,
   isMaterializedEntity,
@@ -10,13 +12,13 @@ import {
   OwnedEntityChange,
   EntityOwnedProperty,
 } from '@dotproductdev/voyages-contribute';
+import { Button } from 'antd';
+
+import { DirectEntityPropertyField } from './DirectEntityPropertyField';
 import { EntityFormProps, EntityForm } from './EntityForm';
 import { EntityTableView } from './EntityTableView';
-import { DirectEntityPropertyField } from './DirectEntityPropertyField';
 import { LinkedEntityPropertyComponent } from './LinkedEntityPropertyComponent';
 import NumbersTableDialog from './NumbersTableDialog';
-import { useCallback, useMemo, useState } from 'react';
-import { Button } from 'antd';
 
 export interface EntityPropertyComponentProps<TProperty = Property>
   extends EntityFormProps {
@@ -50,7 +52,7 @@ const EntityOwnedForm = ({
   );
   const handleChange = useCallback(
     (c: EntityChange) => {
-      c.type === 'update' &&
+      if (c.type === 'update') {
         onChange({
           type: 'update',
           entityRef: parent.entityRef,
@@ -63,6 +65,7 @@ const EntityOwnedForm = ({
             },
           ],
         });
+      }
     },
     [entity, property.uid, parent.entityRef, onChange],
   );
