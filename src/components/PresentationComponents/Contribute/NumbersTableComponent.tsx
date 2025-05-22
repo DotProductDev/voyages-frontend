@@ -1,10 +1,5 @@
-import { EntityChange, TableChange } from '@/models/changeSets';
-import { MaterializedEntity } from '@/models/materialization';
-import { TableProperty } from '@/models/properties';
-import { Input } from '@/styleMUI';
 import React, { useCallback, useState } from 'react';
-import { Table, Input } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
+import {  Input } from 'antd';
 import {
   EntityChange,
   TableChange,
