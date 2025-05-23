@@ -338,17 +338,19 @@ export const ContributionForm = ({
                 flex: 1,
               }}
             >
-              <EntityForm
-                key={entity.entityRef.id}
-                schema={schema}
-                entity={entity}
-                changes={changeSet.changes}
-                onChange={onChangesUpdate}
-                expandedMenu={expandedMenu}
-                setExpandedMenu={setExpandedMenu}
-                accessLevel={accessLevel}
-                onSectionsChange={setSections}
-              />
+              <Form>
+                <EntityForm
+                  key={entity.entityRef.id}
+                  schema={schema}
+                  entity={entity}
+                  changes={changeSet.changes}
+                  onChange={onChangesUpdate}
+                  expandedMenu={expandedMenu}
+                  setExpandedMenu={setExpandedMenu}
+                  accessLevel={accessLevel}
+                  onSectionsChange={setSections}
+                />
+              </Form>
             </div>
           </Card>
         </Col>

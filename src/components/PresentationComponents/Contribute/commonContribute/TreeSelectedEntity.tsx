@@ -112,7 +112,11 @@ const TreeSelectedEntity: React.FC<TreeSelectedEntityProps> = ({
     onChange: handleChange,
     showSearch: true,
     allowClear: true,
-    dropdownStyle: { maxHeight: 400, overflow: 'auto', zIndex: 9999 },
+    styles: {
+      popup: {
+        root: { maxHeight: 400, overflow: 'auto', zIndex: 9999 }
+      }
+    },
     filterTreeNode: (inputValue, treeNode) => {
       const title = typeof treeNode.title === 'string' ? treeNode.title : '';
       return title.toLowerCase().includes(inputValue.toLowerCase());
@@ -121,7 +125,7 @@ const TreeSelectedEntity: React.FC<TreeSelectedEntityProps> = ({
     treeData: treeDataSelect,
     treeExpandedKeys: expandedKeys,
     onTreeExpand: (keys) => setExpandedKeys(keys as SafeKey[]),
-    onDropdownVisibleChange: (open) => {
+    onOpenChange: (open) => {
       if (open && value?.entityRef.id) {
         const path = findPathToNode(treeDataSelect, String(value.entityRef.id));
         if (path) setExpandedKeys(path);
@@ -132,7 +136,15 @@ const TreeSelectedEntity: React.FC<TreeSelectedEntityProps> = ({
   };
   
   return (
-    <TreeSelect<string | number, TreeSelectNode> {...treeSelectProps} treeDefaultExpandAll   dropdownStyle={{overflow: 'auto', zIndex: 9999, }}/>
+    <TreeSelect<string | number, TreeSelectNode> 
+      {...treeSelectProps} 
+      treeDefaultExpandAll 
+      styles={{
+        popup: {
+          root: { overflow: 'auto', zIndex: 9999 }
+        }
+      }}
+    />
   );
 };
 

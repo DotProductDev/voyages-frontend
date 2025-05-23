@@ -1,3 +1,5 @@
+import { useCallback, useEffect, useMemo, useState } from 'react';
+
 import {
   LinkedEntitySelectionChange,
   isMaterializedEntity,
@@ -9,19 +11,21 @@ import {
   applyUpdate,
 } from '@dotproductdev/voyages-contribute';
 import { Alert, Select, Spin, Tooltip } from 'antd';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { EntityFormProps } from './EntityForm';
-import { EntityPropertyChangeCommentBox } from './EntityPropertyChangeCommentBox';
+
+import { useDebounce } from '@/hooks/useDebounce';
 import { useSchemaEnumeration } from '@/hooks/useEnumeration';
+import { useTreeSelectContributeLocation } from '@/hooks/useTreeSelectContributeLocation';
+
 import TreeSelectedEntity, {
   TreeSelectedEntityProps,
 } from './commonContribute/TreeSelectedEntity';
-import { LinkedEntityOwnedPropertyComponent } from './LinkedEntityOwnedPropertyComponent';
-import { useTreeSelectContributeLocation } from '@/hooks/useTreeSelectContributeLocation';
-import '@/style/contributeContent.scss';
-import LinkedEntityAddNewDialogComponent from './LinkedEntityAddNewDialogComponent';
 import { lowerCaseFirstLetter } from './DirectEntityPropertyField';
-import { useDebounce } from '@/hooks/useDebounce';
+import { EntityFormProps } from './EntityForm';
+import { EntityPropertyChangeCommentBox } from './EntityPropertyChangeCommentBox';
+import LinkedEntityAddNewDialogComponent from './LinkedEntityAddNewDialogComponent';
+import { LinkedEntityOwnedPropertyComponent } from './LinkedEntityOwnedPropertyComponent';
+
+import '@/style/contributeContent.scss';
 
 export interface LinkedEntityPropertyComponentProps {
   property: LinkedEntityProperty;
@@ -157,23 +161,22 @@ export const LinkedEntityPropertyComponent = (
       options.map((opt) => ({
         ...opt,
         label: (
-          <Tooltip title={opt.label}>
+          <Tooltip title={<span dangerouslySetInnerHTML={{ __html: opt.label }} />}>
             <div
               style={{
                 whiteSpace: 'nowrap',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
-                maxWidth: '400px', // adjust as needed
+                maxWidth: '400px',
               }}
-            >
-              {opt.label}
-            </div>
+              dangerouslySetInnerHTML={{ __html: opt.label }}
+            />
           </Tooltip>
         ),
       })),
     [options],
   );
-
+  
   let displaySelected;
 
   if (property.linkedEntitySchema === 'Location') {
@@ -196,7 +199,15 @@ export const LinkedEntityPropertyComponent = (
         options={styledOptions}
         onChange={handleChange}
         showSearch
-        dropdownStyle={{ maxHeight: 400, overflow: 'auto', zIndex: 9999 }}
+        styles={{
+          popup: {
+            root: {
+              maxHeight: 400,
+              overflow: 'auto',
+              zIndex: 9999
+            }
+          }
+        }}
         optionLabelProp="label"
         filterOption={(input: string, option: any) =>
           (option?.label?.props?.title ?? '')

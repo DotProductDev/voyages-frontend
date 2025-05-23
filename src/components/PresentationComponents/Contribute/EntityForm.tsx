@@ -156,8 +156,6 @@ const addLabel = (item: ReactNode, label: string) => {
       label={<span className="form-contribute-label">{label}</span>}
       name={label}
       style={{ margin: '6px 4px 6px 0px' }}
-      // labelCol={{ span: 8 }}
-      // wrapperCol={{ span: 16 }}
     >
       {item}
     </Form.Item>
