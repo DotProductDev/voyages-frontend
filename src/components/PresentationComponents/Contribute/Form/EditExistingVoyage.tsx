@@ -1,14 +1,20 @@
 import '@/style/contributeContent.scss';
 import '@/style/newVoyages.scss';
-import { Form, Input, Button, Divider } from 'antd';
 import { useState } from 'react';
+
+import {
+  ChangeSet,
+  MaterializedEntity,
+} from '@dotproductdev/voyages-contribute';
+import { Form, Input, Button } from 'antd';
+
+import LOADINGLOGO from '@/assets/sv-logo_v2_notext.svg';
+import { fetchSubmitEditVoaygesForm } from '@/fetch/contributeFetch/fetchSubmitEditVoaygesForm';
+
 import {
   ContributionForm,
   ContributionSectionStyle,
 } from '../ContributionForm';
-import { MaterializedEntity } from '@dotproductdev/voyages-contribute';
-import { fetchSubmitEditVoaygesForm } from '@/fetch/contributeFetch/fetchSubmitEditVoaygesForm';
-import LOADINGLOGO from '@/assets/sv-logo_v2_notext.svg';
 
 const initialExistingVoyageEntity: MaterializedEntity = {
   entityRef: {
@@ -31,6 +37,7 @@ const EditExistingVoyage: React.FC<EditExistingVoyageProps> = ({
     initialExistingVoyageEntity as MaterializedEntity,
   );
   const [loading, setLoading] = useState(false);
+  const [changeSet, setChangeSet] = useState<ChangeSet | undefined>(undefined);
 
   const handleSubmit = async (values: any): Promise<void> => {
     const voyageId = values.voyageId;
@@ -40,6 +47,14 @@ const EditExistingVoyage: React.FC<EditExistingVoyageProps> = ({
       const res = await fetchSubmitEditVoaygesForm(voyageId);
       if (res.status === 200) {
         setEntity(res.data);
+        setChangeSet({
+          id: -1,
+          author: 'Mocked',
+          title: `Mocked edit voyage ${voyageId}`,
+          changes: [],
+          comments: '',
+          timestamp: new Date().getTime(),
+        });
         setLoading(true);
       } else {
         alert(`Voyage not found/error on api`);
@@ -147,7 +162,13 @@ const EditExistingVoyage: React.FC<EditExistingVoyageProps> = ({
           </div>
         )}
       </div>
-      {hasEntity && <ContributionForm entity={entity} />}
+      {hasEntity && changeSet && (
+        <ContributionForm
+          entity={entity}
+          changeSet={changeSet}
+          onChange={setChangeSet}
+        />
+      )}
     </div>
   );
 };

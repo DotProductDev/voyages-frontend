@@ -1,8 +1,6 @@
 import {
   applyUpdate,
-  cloneEntity,
-  expandMaterialized,
-  MaterializedEntity,
+  cloneEntity, MaterializedEntity,
   EntitySchema,
   areMatch,
   EntityChange,
@@ -11,9 +9,12 @@ import {
   OwnedEntityListChange,
   PropertyChange,
   OwnedEntityListProperty,
+  materializeNew,
+  getSchema,
+  OwnedEntityChange
 } from '@dotproductdev/voyages-contribute';
 import { Box, IconButton, TableCell, TableRow, Collapse } from '@mui/material';
-import React, { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Delete, Restore } from '@mui/icons-material';
 import { EntityForm, EntityFormProps } from './EntityForm';
 import { KeyboardArrowUp, KeyboardArrowDown } from '@mui/icons-material';
@@ -37,7 +38,7 @@ export const EntityTableRow = ({
   onChange,
   ...other
 }: EntityTableRowProps & EntityFormProps) => {
-  const [open, setOpen] = React.useState(false);
+  const [open, setOpen] = useState(false);
 
   const isDeleted =
     lastChange &&
@@ -88,7 +89,7 @@ export const EntityTableRow = ({
       const prev = change.modified.find((m) =>
         areMatch(m.ownedEntity.entityRef, c.entityRef),
       );
-      const next = mergePropertyChange(prev, {
+      const next = mergePropertyChange(prev as OwnedEntityChange, {
         kind: 'owned',
         ownedEntity: prev?.ownedEntity ?? entity,
         property: property.uid,
@@ -146,13 +147,20 @@ export const EntityTableRow = ({
     let e = entity;
     if (debouncedPropChanges.length > 0) {
       e = cloneEntity(entity);
+      if (entity.entityRef.type === "new" && Object.keys(entity.data).length === 0) {
+        // A new entity may be empty to avoid unnecessary data.
+        e = materializeNew(
+          getSchema(entity.entityRef.schema),
+          entity.entityRef.id,
+        );
+      }
       applyUpdate(e, debouncedPropChanges);
     }
     return e;
   }, [entity, debouncedPropChanges]);
 
   return (
-    <React.Fragment>
+    <>
       <TableRow
         sx={{
           '& > *': {
@@ -213,6 +221,6 @@ export const EntityTableRow = ({
           </Collapse>
         </TableCell>
       </TableRow>
-    </React.Fragment>
+    </>
   );
 };

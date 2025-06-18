@@ -44,7 +44,7 @@ export const EntityTableView = ({
 }: EntityTableViewProps & EntityFormProps) => {
   const { label, linkedEntitySchema } = property;
   // console.log({property, entity, ...other})
-  const fieldValue = entity.data[label];
+  const fieldValue = entity.data[label] ?? [];
   if (!isMaterializedEntityArray(fieldValue)) {
     return (
       <span>
@@ -104,7 +104,6 @@ export const EntityTableView = ({
             {
               kind: 'owned',
               ownedEntity: added,
-              property: property.uid,
               changes: [
                 {
                   kind: 'direct',
