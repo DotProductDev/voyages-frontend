@@ -11,6 +11,7 @@ import {
   EntityChange,
   OwnedEntityChange,
   EntityOwnedProperty,
+  materializeNew,
 } from '@dotproductdev/voyages-contribute';
 import { Button } from 'antd';
 
@@ -96,18 +97,47 @@ export const EntityPropertyComponent = ({
   const [isOpenNumbersTableDialog, setOpenNumbersTableDialog] = useState(false);
   const handleOnCloseNumbersTableDialog = () =>
     setOpenNumbersTableDialog(false);
+  const handleCreateNew = useCallback((p: EntityOwnedProperty) => {
+    const created = materializeNew(getSchema(p.linkedEntitySchema), crypto.randomUUID());
+    other.onChange({
+      type: 'update',
+      entityRef: entity.entityRef,
+      changes: [
+        {
+          kind: 'owned',
+          property: p.uid,
+          ownedEntity: created,
+          changes: []
+        },
+      ],
+    });
+  }, []);
   if (kind === 'entityOwned') {
-    const value = entity.data[property.label];
     if (lastChange && lastChange.kind !== 'owned') {
       return <span>BUG: unexpected change type for Owned entity.</span>;
+    }
+    const value = entity.data[property.label] ?? lastChange?.ownedEntity ?? null;
+    if (value === null) {
+      return <>
+        <Button onClick={() => handleCreateNew(property)}>Create</Button>
+      </>
     }
     if (
       isMaterializedEntity(value) &&
       value.entityRef.schema === property.linkedEntitySchema
     ) {
+      if (lastChange && !areMatch(lastChange.ownedEntity.entityRef, value.entityRef)) {
+        if (value.entityRef.type !== "new" && lastChange.ownedEntity.entityRef.type !== "new") {
+          return <span>
+            BUG: unexpected change type for Owned entity. Expected {lastChange.ownedEntity.entityRef.id} but got {value.entityRef.id}.
+            </span>;
+        }
+        // Patch lastChange
+        value.entityRef.id = lastChange.ownedEntity.entityRef.id;
+      }
       return (
         <EntityOwnedForm
-          key={entity.entityRef.id}
+          key={`${entity.entityRef.id}_${property.uid}`}
           {...other}
           property={property}
           schema={getSchema(property.linkedEntitySchema)}
@@ -120,6 +150,7 @@ export const EntityPropertyComponent = ({
       return (
         <span>
           BUG: expected a materialized value of the correct entity type.
+          {JSON.stringify(value)}
         </span>
       );
     }

@@ -72,23 +72,23 @@ function combineEntityChanges(changes: EntityChange[]): EntityChange[] {
   });
 }
 
+export interface ContributionFormProps {
+  entity: MaterializedEntity;
+  changeSet: ChangeSet;
+  onChange: (changeSet: ChangeSet) => void;
+  accessLevel?: PropertyAccessLevel
+}
+
 export const ContributionForm = ({
   entity,
-}: {
-  entity: MaterializedEntity;
-}) => {
+  changeSet,
+  onChange,
+  accessLevel: initAccessLevel,
+}: ContributionFormProps) => {
   const [contributeForm] = Form.useForm();
   const schema = getSchema(entity.entityRef.schema);
-  const [changeSet, setChangeSet] = useState<ChangeSet>({
-    id: -1,
-    author: 'Mocked',
-    title: '',
-    changes: [],
-    comments: '',
-    timestamp: new Date().getTime(),
-  });
   const [accessLevel, setAccessLevel] = useState<PropertyAccessLevel>(
-    PropertyAccessLevel.AdvancedContributor,
+    initAccessLevel ?? PropertyAccessLevel.AdvancedContributor,
   );
   const [globalExpand, setGlobalExpand] = useState(false);
   const [expandedMenu, setExpandedMenu] = useState<string[]>([]);
@@ -114,25 +114,27 @@ export const ContributionForm = ({
       comments: '',
       accessLevel: PropertyAccessLevel.AdvancedContributor,
     });
-    setChangeSet({
-      id: -1,
-      author: 'Mocked',
-      title: `Contribution for ${schema.getLabel(entity.data)}`,
-      changes: [],
-      comments: '',
-      timestamp: new Date().getTime(),
-    });
-  }, [schema, contributeForm, entity]);
+    // TODO: Thasanee: I commented out the following as now the
+    // changeSet is managed by the parent component.
+    //onChange({
+    //  id: -1,
+    //  author: 'Mocked',
+    //  title: `Contribution for ${schema.getLabel(entity.data)}`,
+    //  changes: [],
+    //  comments: '',
+    //  timestamp: new Date().getTime(),
+    //});
+  }, [schema, contributeForm, entity, onChange]);
 
   const onChangesUpdate = useCallback(
-    (newChange: EntityChange) =>
-      setChangeSet((current) => {
-        const next = addToChangeSet(current.changes, newChange);
-        dropOrphans(next);
-        const combined = combineEntityChanges(next);
-        return { ...current, changes: combined };
-      }),
-    [],
+    (newChange: EntityChange) => {
+      const current = changeSet;
+      const next = addToChangeSet(current.changes, newChange);
+      dropOrphans(next);
+      const combined = combineEntityChanges(next);
+      onChange({ ...current, changes: combined });
+    },
+    [onChange, changeSet],
   );
 
   const handlePreviewChanges = () => {
@@ -171,16 +173,16 @@ export const ContributionForm = ({
     }
   };
 
-  const resetAllChanges = () => {
+  const resetAllChanges = useCallback(() => {
     Modal.confirm({
       title: 'Reset all changes?',
       content: 'This will clear all unsaved edits. Are you sure?',
       onOk: () => {
-        setChangeSet((current) => ({ ...current, changes: [] }));
+        onChange({ ...changeSet, changes: [] });
         contributeForm.resetFields();
       },
     });
-  };
+  }, [onChange, changeSet, contributeForm]);
 
   const toggleExpandAll = () => {
     const allKeys = sections?.map((section) => section.key as string) ?? [];
@@ -188,8 +190,9 @@ export const ContributionForm = ({
     setGlobalExpand(!globalExpand);
   };
 
-  const handleDeletePropertyChange = (propertyToDelete: string) => {
-    setChangeSet((prev) => {
+  const handleDeletePropertyChange = useCallback(
+    (propertyToDelete: string) => {
+      const prev = changeSet;
       const updatedChanges: EntityChange[] = prev.changes
         .map((entityChange) => {
           if (
@@ -229,12 +232,13 @@ export const ContributionForm = ({
         })
         .filter(Boolean) as EntityChange[];
 
-      return {
+      onChange({
         ...prev,
         changes: updatedChanges,
-      };
-    });
-  };
+      });
+    },
+    [changeSet, onChange],
+  );
 
   return (
     <>
@@ -263,7 +267,7 @@ export const ContributionForm = ({
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item label="Contributor Mode" name="accessLevel">
+              {initAccessLevel === undefined && <Form.Item label="Contributor Mode" name="accessLevel">
                 <Select
                   options={accessLevelOptions}
                   style={{ width: '100%' }}
@@ -272,7 +276,7 @@ export const ContributionForm = ({
                     setAccessLevel(value)
                   }
                 />
-              </Form.Item>
+              </Form.Item>}
             </Col>
             <Col span={24}>
               <Form.Item label="Contribution Message" name="comments">
