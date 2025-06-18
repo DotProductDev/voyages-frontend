@@ -209,14 +209,14 @@
 				]
 			}
 		},
-      {
+		{
 			"header_label": {
 				"en": "Enslavers",
 				"es": "Esclavistas",
 				"pt": "Escravistas"
 
 			},
-			"cell_type": "literal",
+			"cell_type": "literal-concat",
 			"visible": true,
 			"number_format": null,
 			"order_by": [
@@ -227,10 +227,15 @@
 			"cell_val": {
 				"fields": [
 					{
-						"var_name": "enslavers__name_and_role",
+						"var_name": "enslavers__enslaver__principal_alias",
+						"cell_fn": "literal"
+					},
+					{
+						"var_name": "enslavers__roles",
 						"cell_fn": "literal"
 					}
-				]
+				],
+				"join": " : "
 			}
 		},
 		{

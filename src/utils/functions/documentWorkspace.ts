@@ -12,7 +12,7 @@ export interface DocumentItemInfo {
 const UserWorkspaceLocalStorageKey = 'my-workspace';
 
 export const ManifestURLBase =
-  import.meta.env.VITE_IIIF_MANIFESTS_BASEURL;
+  import.meta.env.VITE_API_BASE_URL + '/static/iiif_manifests/';
 
 export type DocumentWorkspace = DocumentItemInfo[];
 

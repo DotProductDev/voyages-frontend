@@ -24,7 +24,6 @@ import {
   varNameSlavesOutcomeList,
   varNameVesselCapturedOutcomeList,
   varNameEnslaverRoleList,
-  varNameGenderName,
 } from '@/share/CONST_DATA';
 import { fetchParticularOutcomeList } from '@/fetch/voyagesFetch/fetchParticularOutcomeList';
 import { fetchRigOfVesselList } from '@/fetch/voyagesFetch/fetchRigOfVesselList';
@@ -33,7 +32,6 @@ import { fetchSlavesOutcomeList } from '@/fetch/voyagesFetch/fetchSlavesOutcomeL
 import { fetchTonTypeList } from '@/fetch/voyagesFetch/fetchTonTypeList';
 import { fetchVesselCapturedOutcomeList } from '@/fetch/voyagesFetch/fetchVesselCapturedOutcomeList';
 import { fetchEnslaverRoleList } from '@/fetch/voyagesFetch/fetchEnslaverRoleList';
-import { fetchEnslavedGenderList } from '@/fetch/pastEnslavedFetch/fetchPastEnslavedGenderList';
 
 interface SelectSearchDropdownListProps {}
 
@@ -67,10 +65,9 @@ export const SelectSearchDropdownList: FunctionComponent<
     [varNameTonTypList]: fetchTonTypeList,
     [varNameVesselCapturedOutcomeList]: fetchVesselCapturedOutcomeList,
     [varNameEnslaverRoleList]: fetchEnslaverRoleList,
-    [varNameGenderName] : fetchEnslavedGenderList
   };
 
-  const fetchSelectSearchDrowListData = async () => {
+  const fetchNationalityData = async () => {
     const fetchFunction = fetchFunctionMapping[varName];
     if (!fetchFunction) return;
 
@@ -86,7 +83,7 @@ export const SelectSearchDropdownList: FunctionComponent<
   };
 
   useEffect(() => {
-    fetchSelectSearchDrowListData();
+    fetchNationalityData();
     const storedValue = localStorage.getItem('filterObject');
     if (!storedValue) return;
     const parsedValue = JSON.parse(storedValue);
@@ -143,21 +140,17 @@ export const SelectSearchDropdownList: FunctionComponent<
         </div>
       )}
       renderTags={(value: readonly MultiselectListProps[], getTagProps) =>
-        value.map((option: MultiselectListProps, index: number) => {
-          const { key, ...tagProps } = getTagProps({ index });
-          return (
-            <Chip
-              key={key}
-              label={option.name}
-              style={{
-                margin: 2,
-                border: getBoderColor(styleName),
-                color: '#000',
-              }}
-              {...tagProps}
-            />
-          );
-        })
+        value.map((option: MultiselectListProps, index: number) => (
+          <Chip
+            label={option.name}
+            style={{
+              margin: 2,
+              border: getBoderColor(styleName),
+              color: '#000',
+            }}
+            {...getTagProps({ index })}
+          />
+        ))
       }
     />
   );

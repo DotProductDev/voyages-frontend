@@ -19,8 +19,8 @@
         },
         "label": {
           "en": "Voyage ID",
-          "es": "ES: Voyage ID",
-          "pt": "PT: Voyage ID"
+          "es": "Viaje ID",
+          "pt": "Viagem ID"
         }
       },
       {
@@ -36,8 +36,8 @@
         },
         "label": {
           "en": "Name of vessel",
-          "es": "ES: Name of vessel",
-          "pt": "PT: Name of vessel"
+          "es": "Nombre del buque",
+          "pt": "Nome do navio"
         }
       },
       {
@@ -57,9 +57,9 @@
           "join": ": "
         },
         "label": {
-          "en": "Enslavers",
-          "es": "ES: Enslavers",
-          "pt": "PT: Enslavers"
+          "en": "Principal Enslaver",
+          "es": "ES: Principal Enslaver",
+          "pt": "PT: Principal Enslaver"
         }
       },
       {
@@ -159,9 +159,9 @@
           ]
         },
         "label": {
-          "en": "Rig of Vessel",
-          "es": "ES: Rig of Vessel",
-          "pt": "PT: Rig of Vessel"
+          "en": "Rig of vessel",
+          "es": "ES: Rig of vessel",
+          "pt": "PT: Rig of vessel"
         }
       },
       {
@@ -397,11 +397,7 @@
             }
           ]
         },
-        "label": {
-          "en": "Third place of slave landing (ADPSALE2)",
-          "es": "ES: Third place of slave landing (ADPSALE2)",
-          "pt": "PT: Third place of slave landing (ADPSALE2)"
-        }
+        "label": "Third place of slave landing (ADPSALE2)"
       },
       {
         "cell_type": "literal",
@@ -431,11 +427,7 @@
             }
           ]
         },
-        "label": {
-          "en": "First place of slave landing (SLA1PORT)",
-          "es": "ES: First place of slave landing (SLA1PORT)",
-          "pt": "PT: First place of slave landing (SLA1PORT)"
-        }
+        "label": "First place of slave landing (SLA1PORT)"
       },
       {
         "cell_type": "literal",
@@ -464,11 +456,7 @@
             }
           ]
         },
-        "label": {
-          "en": "Place at which voyage ended (PORTRET)",
-          "es": "ES: Place at which voyage ended (PORTRET)",
-          "pt": "PT:Place at which voyage ended (PORTRET)"
-        }
+        "label": "Place at which voyage ended (PORTRET)"
       }
     ]
   },
@@ -507,11 +495,7 @@
             }
           ]
         },
-        "label": {
-          "en": "Voyage length from home port to disembarkation (days) (VOY1IMP)",
-          "es": "ES: Voyage length from home port to disembarkation (days) (VOY1IMP)",
-          "pt": "PT: Voyage length from home port to disembarkation (days) (VOY1IMP)"
-        }
+        "label": "Voyage length from home port to disembarkation (days) (VOY1IMP)"
       },
       {
         "cell_type": "literal",
@@ -568,9 +552,9 @@
           ]
         },
         "label": {
-          "en": "Names of Enslaved People",
-          "es": "ES: Names of Enslaved People",
-          "pt": "PT: Names of Enslaved People"
+          "en": "Names of Enslaved People)",
+          "es": "ES: Names of Enslaved People)",
+          "pt": "PT: Names of Enslaved People)"
         }
       },
       {
@@ -994,8 +978,8 @@
   {
     "label": {
       "en": "Sources",
-      "es": "ES: Sources",
-      "pt": "PT: Sources"
+      "es": "Fuentes",
+      "pt": "Fontes"
     },
     "children": [
       {
@@ -1003,6 +987,10 @@
         "number_format": null,
         "cell_val": {
           "fields": [
+            {
+              "var_name": "sources__short_ref__name",
+              "cell_fn": "literal"
+            },
             {
               "var_name": "sources__title",
               "cell_fn": "literal"

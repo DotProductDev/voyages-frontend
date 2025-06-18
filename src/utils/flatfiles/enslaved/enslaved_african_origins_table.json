@@ -6,7 +6,7 @@
         "es": "Documented Name ES",
         "pt": "Documented Name PT"
       },
-      "cell_type": "literal",
+      "cell_type": "literal-concat",
       "visible": true,
       "number_format": null,
       "order_by": ["documented_name"],
@@ -18,7 +18,8 @@
             "var_name": "documented_name",
             "cell_fn": "literal"
           }
-        ]
+        ],
+        "join": " / "
       }
     },
     {
@@ -27,7 +28,7 @@
         "es": "Modern Name ES",
         "pt": "Modern Name PT"
       },
-      "cell_type": "literal",
+      "cell_type": "literal-concat",
       "visible": true,
       "number_format": null,
       "order_by": ["modern_name"],
@@ -39,7 +40,8 @@
             "var_name": "modern_name",
             "cell_fn": "literal"
           }
-        ]
+        ],
+        "join": " / "
       }
     },
     {
@@ -137,11 +139,11 @@
       "number_format": "comma",
       "order_by": ["voyages__voyage_id"],
       "col_width_px": 100,
-      "colID": "voyages__id",
+      "colID": "voyages__voyage_id",
       "cell_val": {
         "fields": [
           {
-            "var_name": "voyages__id",
+            "var_name": "voyages__voyage_id",
             "cell_fn": "literal"
           }
         ]
@@ -162,7 +164,7 @@
       "cell_val": {
         "fields": [
           {
-            "var_name": "voyages__ship_name",
+            "var_name": "voyages__voyage_ship__ship_name",
             "cell_fn": "literal"
           }
         ]
@@ -196,7 +198,7 @@
         "es": "Enslavers ES",
         "pt": "Enslavers PT"
       },
-      "cell_type": "literal",
+      "cell_type": "literal-concat",
       "visible": true,
       "number_format": null,
       "order_by": [
@@ -207,10 +209,15 @@
       "cell_val": {
         "fields": [
           {
-            "var_name": "enslavers__name_and_role",
+            "var_name": "enslavers__enslaver__principal_alias",
+            "cell_fn": "literal"
+          },
+          {
+            "var_name": "enslavers__roles",
             "cell_fn": "literal"
           }
-        ]
+        ],
+        "join": " : "
       }
     },
     {
@@ -230,7 +237,7 @@
       "cell_val": {
         "fields": [
           {
-            "var_name": "voyages__embarkation",
+            "var_name": "voyages__voyage_itinerary__imp_principal_region_of_slave_purchase__name",
             "cell_fn": "literal"
           }
         ]
@@ -253,7 +260,7 @@
       "cell_val": {
         "fields": [
           {
-            "var_name": "voyages__disembarkation",
+            "var_name": "voyages__voyage_itinerary__imp_principal_port_slave_dis__name",
             "cell_fn": "literal"
           }
         ]
@@ -265,7 +272,7 @@
         "es": "Date of Arrival ES",
         "pt": "Date of Arrival PT"
       },
-      "cell_type": "literal",
+      "cell_type": "literal-concat",
       "visible": true,
       "number_format": null,
       "order_by": [
@@ -278,18 +285,19 @@
       "cell_val": {
         "fields": [
           {
-            "var_name": "voyages__year",
+            "var_name": "voyages__voyage_dates__imp_arrival_at_port_of_dis_sparsedate__year",
             "cell_fn": "literal"
           },
           {
-            "var_name": "voyages__month",
+            "var_name": "voyages__voyage_dates__imp_arrival_at_port_of_dis_sparsedate__month",
             "cell_fn": "literal"
           },
           {
-            "var_name": "voyages__day",
+            "var_name": "voyages__voyage_dates__imp_arrival_at_port_of_dis_sparsedate__day",
             "cell_fn": "literal"
           }
-        ]
+        ],
+        "join": ","
       }
     },
     {
@@ -513,9 +521,9 @@
           "col_width_px": 100,
           "colID": "captive_fate__name",
           "label": {
-            "en": "Captive fate",
-            "es": "Destino del cautivo",
-            "pt": "Destino do cativo"
+            "en": "Captive Outcome",
+            "es": "Captive Outcome ES",
+            "pt": "Captive Outcome PT"
           }
         },
         {

@@ -137,7 +137,6 @@ export const GenerateCellTableRenderer = (
               label: params.data.sources__title[index],
               thumb: params.data.sources__thumbnail?.at(index),
               revision_number: 1,
-              textSnippet: '', 
             });
         }
         let cellComponent = (
@@ -154,7 +153,7 @@ export const GenerateCellTableRenderer = (
           // Wrap the component so that we can display a tooltip.
           cellComponent = (
             <PopoverWrapper
-              padding={2}
+              padding={4}
               key={`${index}-${value}`}
               popoverContents={
                 <div

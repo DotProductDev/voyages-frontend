@@ -31,7 +31,6 @@ const NumbersTableComponent: React.FC<EditableTableProps> = ({
   onChange,
 }) => {
   const [activeCell, setActiveCell] = useState<ActiveCell | null>(null);
-  const [localChanges, setLocalChanges] = useState<Record<string, string>>({});
 
   const entityData = entity.data;
 

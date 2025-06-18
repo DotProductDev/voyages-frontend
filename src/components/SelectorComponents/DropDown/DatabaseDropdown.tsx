@@ -45,7 +45,7 @@ export default function DatabaseDropdown(props: DatabaseDropdownProps) {
     } else if (endpointPeopleDirect === ENSALVERSROUTE) {
       setHeadTitle(translatedPageValue.enslaversPage);
     }
-  }, [endpointPath, endpointPeopleDirect, translatedPageValue]);
+  }, [headerTitle, languageValue]);
 
   const handleClick = (event: MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -85,6 +85,7 @@ export default function DatabaseDropdown(props: DatabaseDropdownProps) {
       </Button>
       <Menu
         id="fade-menu"
+        className="enslaved-header-subtitle"
         disableScrollLock={true}
         anchorEl={anchorEl}
         open={open}
