@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import {
   ChangeSet,
+  Contribution,
   EntityUpdate,
   getSchema,
   materializeNew,
@@ -17,6 +18,9 @@ import {
   TableRow,
 } from '@mui/material';
 
+import { BASEURLNODE } from '@/share/AUTH_BASEURL';
+
+// eslint-disable-next-line import/no-named-as-default
 import ContributionForm from './ContributionForm';
 
 const tempContrib: EntityUpdate = {
@@ -275,6 +279,7 @@ const tempContrib: EntityUpdate = {
                       modified: [
                         {
                           kind: 'owned',
+                          property: 'EnslaverInRelation_Roles',
                           ownedEntity: {
                             entityRef: {
                               id: '2da11626-69fa-43d6-9a2b-614b6989ea2a',
@@ -317,7 +322,7 @@ const tempContrib: EntityUpdate = {
   ],
 };
 
-const contribs: ChangeSet[] = [tempContrib].map((u) => ({
+const _contribs: ChangeSet[] = [tempContrib].map((u) => ({
   id: 'mock',
   author: 'Mock author',
   title: `Mock Contribution for Voyage #${u.entityRef.id}`,
@@ -328,6 +333,7 @@ const contribs: ChangeSet[] = [tempContrib].map((u) => ({
 
 export const TempEditorialPlat = () => {
   const [active, setActive] = useState<ChangeSet | undefined>(undefined);
+  const [contribs, setContribs] = useState<ChangeSet[]>(_contribs);
   const empty = useMemo(
     () =>
       active
@@ -338,6 +344,21 @@ export const TempEditorialPlat = () => {
         : undefined,
     [active],
   );
+  useEffect(() => {
+    // Load contributions from the server.
+    const load = async () => {
+      try {
+        const res = await fetch(
+          `${BASEURLNODE}/contributions?page=1&limit=100`,
+        );
+        const data = (await res.json()).data as Contribution[];
+        setContribs(data.map((c) => c.changeSet));
+      } catch (error) {
+        console.error('Failed to load contributions:', error);
+      }
+    };
+    load();
+  }, []);
   return (
     <>
       {active === undefined && (
