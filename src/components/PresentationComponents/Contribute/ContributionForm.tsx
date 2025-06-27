@@ -76,7 +76,7 @@ export interface ContributionFormProps {
   entity: MaterializedEntity;
   changeSet: ChangeSet;
   onChange: (changeSet: ChangeSet) => void;
-  accessLevel?: PropertyAccessLevel
+  accessLevel?: PropertyAccessLevel;
 }
 
 export const ContributionForm = ({
@@ -267,16 +267,18 @@ export const ContributionForm = ({
               </Form.Item>
             </Col>
             <Col span={12}>
-              {initAccessLevel === undefined && <Form.Item label="Contributor Mode" name="accessLevel">
-                <Select
-                  options={accessLevelOptions}
-                  style={{ width: '100%' }}
-                  value={accessLevel}
-                  onChange={(value: PropertyAccessLevel) =>
-                    setAccessLevel(value)
-                  }
-                />
-              </Form.Item>}
+              {initAccessLevel === undefined && (
+                <Form.Item label="Contributor Mode" name="accessLevel">
+                  <Select
+                    options={accessLevelOptions}
+                    style={{ width: '100%' }}
+                    value={accessLevel}
+                    onChange={(value: PropertyAccessLevel) =>
+                      setAccessLevel(value)
+                    }
+                  />
+                </Form.Item>
+              )}
             </Col>
             <Col span={24}>
               <Form.Item label="Contribution Message" name="comments">

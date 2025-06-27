@@ -1,22 +1,28 @@
-import SignInForm from '@/components/PresentationComponents/Contribute/Form/SingInForm';
 import SignUpForm from '@/components/PresentationComponents/Contribute/Form/SignUpForm';
+import SignInForm from '@/components/PresentationComponents/Contribute/Form/SingInForm';
 import '@/style/contributeContent.scss';
-import Guidelines from './Guidelines';
-import PasswordReset from '@/components/PresentationComponents/Contribute/Form/PasswordRestForm';
-import { Link } from 'react-router-dom';
 import { useNavigation } from '@/hooks/useNavigation';
 import { usePageRouter } from '@/hooks/usePageRouter';
-import TermsAndConditions from './Form/TermsAndConditions';
-import SignOut from './Form/SignOut';
+import { RootState } from '@/redux/store';
+import { translationLanguagesContribute } from '@/utils/functions/translationLanguages';
+
 import ContributeHomeWelcome from './ContributeHomeWelcome';
+import SignOut from './Form/SignOut';
+import TermsAndConditions from './Form/TermsAndConditions';
+import Guidelines from './Guidelines';
+
+import PasswordReset from '@/components/PresentationComponents/Contribute/Form/PasswordRestForm';
+
+import { Link } from 'react-router-dom';
+
 import PasswordChangeForm from '@/components/PresentationComponents/Contribute/Form/PasswordChangeForm';
 import EditExistingVoyage from '@/components/PresentationComponents/Contribute/Form/EditExistingVoyage';
 import MergeVoyages from '@/components/PresentationComponents/Contribute/Form/MergeVoyages';
 import RecommendVoyageDeletion from '@/components/PresentationComponents/Contribute/Form/RecommendVoyageDeletion';
 import NewVoyage from '@/components/PresentationComponents/Contribute/Form/NewVoyage';
-import { translationLanguagesContribute } from '@/utils/functions/translationLanguages';
+
 import { useSelector } from 'react-redux';
-import { RootState } from '@/redux/store';
+
 import { TempEditorialPlat } from './TempEditorialPlat';
 
 interface ContributeContent {
@@ -27,7 +33,7 @@ const ContributeContent: React.FC<ContributeContent> = ({ openSideBar }) => {
   const { handleClickGuidelines, handleResetPasswordClick } = useNavigation();
   const { contributePath, endpointPath } = usePageRouter();
   const { languageValue } = useSelector(
-    (state: RootState) => state.getLanguages
+    (state: RootState) => state.getLanguages,
   );
   const translatedContribute = translationLanguagesContribute(languageValue);
 
@@ -41,7 +47,8 @@ const ContributeContent: React.FC<ContributeContent> = ({ openSideBar }) => {
         <p>{translatedContribute.contributeText2}</p>
         <p>
           {translatedContribute.contributeText3}{' '}
-          <Link to="#">{translatedContribute.contributeText3Link1}</Link>{' '}{translatedContribute.contributeText4}{' '}
+          <Link to="#">{translatedContribute.contributeText3Link1}</Link>{' '}
+          {translatedContribute.contributeText4}{' '}
           <a onClick={handleClickGuidelines} style={{ cursor: 'pointer' }}>
             {translatedContribute.contributeText3Link2}
           </a>
@@ -73,7 +80,7 @@ const ContributeContent: React.FC<ContributeContent> = ({ openSideBar }) => {
   } else if (contributePath === 'interim') {
     displayContent = <NewVoyage />;
   } else if (contributePath === 'edit_voyage') {
-    displayContent = <EditExistingVoyage openSideBar={openSideBar}/>;
+    displayContent = <EditExistingVoyage openSideBar={openSideBar} />;
   } else if (contributePath === 'merge_voyages') {
     displayContent = <MergeVoyages />;
   } else if (contributePath === 'delete_voyage') {

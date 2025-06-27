@@ -106,19 +106,21 @@ const NewVoyage: React.FC = ({ entity = tempNewVoyage }: NewVoyageProps) => {
         >
           <Input.TextArea rows={2} />
         </Form.Item>
-        <small className="comment-small">
-          The comments above are meant for information related to the voyage
-          which does not fit any of the existing fields. For comments meant to
-          the reviewer/editor, please use the contributor&apos;s comments at the
-          end of this form or any of the specific field comment boxes.
-        </small>
-        <Divider style={{ margin: '12px 0' }} />
-        <ContributionForm
-          entity={entity}
-          changeSet={changeSet}
-          onChange={setChangeSet}
-        />
-        <Divider style={{ margin: '12px 0' }} />
+      </Form>
+      <small className="comment-small">
+        The comments above are meant for information related to the voyage which
+        does not fit any of the existing fields. For comments meant to the
+        reviewer/editor, please use the contributor&apos;s comments at the end
+        of this form or any of the specific field comment boxes.
+      </small>
+      <Divider style={{ margin: '12px 0' }} />
+      <ContributionForm
+        entity={entity}
+        changeSet={changeSet}
+        onChange={setChangeSet}
+      />
+      <Divider style={{ margin: '12px 0' }} />
+      <Form layout="vertical" form={form}>
         <Form.Item
           name="contributorsComments"
           label={

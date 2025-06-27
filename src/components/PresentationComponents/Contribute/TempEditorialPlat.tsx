@@ -20,8 +20,7 @@ import {
 
 import { BASEURLNODE } from '@/share/AUTH_BASEURL';
 
-// eslint-disable-next-line import/no-named-as-default
-import ContributionForm from './ContributionForm';
+import { ContributionForm } from './ContributionForm';
 
 const tempContrib: EntityUpdate = {
   type: 'update',
@@ -279,7 +278,6 @@ const tempContrib: EntityUpdate = {
                       modified: [
                         {
                           kind: 'owned',
-                          property: 'EnslaverInRelation_Roles',
                           ownedEntity: {
                             entityRef: {
                               id: '2da11626-69fa-43d6-9a2b-614b6989ea2a',

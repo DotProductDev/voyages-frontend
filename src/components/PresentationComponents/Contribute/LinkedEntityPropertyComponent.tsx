@@ -79,11 +79,15 @@ export const LinkedEntityPropertyComponent = (
   const debouncedLastChange = useDebounce(lastChange, 800);
 
   const options = useMemo(() => {
-    const res = optionItems.map((entity) => ({
-      label: linkedSchema.getLabel(entity.data, true),
-      value: entity.entityRef.id,
-      entity,
-    }));
+    const res = optionItems.map((entity) => {
+      const labelText = linkedSchema.getLabel(entity.data, true);
+      return {
+        label: labelText,
+        value: entity.entityRef.id,
+        entity,
+        searchText: labelText.replace(/<[^>]+>/g, ''),
+      };
+    });
 
     if (debouncedLastChange?.changed?.entityRef.type === 'new') {
       const updatedLinkedEntity = debouncedLastChange.linkedChanges
@@ -96,6 +100,9 @@ export const LinkedEntityPropertyComponent = (
         label: linkedSchema.getLabel(updatedLinkedEntity.data, true),
         value: debouncedLastChange.changed.entityRef.id,
         entity: updatedLinkedEntity,
+        searchText: linkedSchema
+          .getLabel(updatedLinkedEntity.data, true)
+          .replace(/<[^>]+>/g, ''),
       });
     }
     return res;
@@ -161,7 +168,9 @@ export const LinkedEntityPropertyComponent = (
       options.map((opt) => ({
         ...opt,
         label: (
-          <Tooltip title={<span dangerouslySetInnerHTML={{ __html: opt.label }} />}>
+          <Tooltip
+            title={<span dangerouslySetInnerHTML={{ __html: opt.label }} />}
+          >
             <div
               style={{
                 whiteSpace: 'nowrap',
@@ -173,10 +182,11 @@ export const LinkedEntityPropertyComponent = (
             />
           </Tooltip>
         ),
+        searchText: opt.searchText,
       })),
     [options],
   );
-  
+
   let displaySelected;
 
   if (property.linkedEntitySchema === 'Location') {
@@ -204,15 +214,13 @@ export const LinkedEntityPropertyComponent = (
             root: {
               maxHeight: 400,
               overflow: 'auto',
-              zIndex: 9999
-            }
-          }
+              zIndex: 9999,
+            },
+          },
         }}
         optionLabelProp="label"
         filterOption={(input: string, option: any) =>
-          (option?.label?.props?.title ?? '')
-            .toLowerCase()
-            .includes(input.toLowerCase())
+          (option?.searchText ?? '').toLowerCase().includes(input.toLowerCase())
         }
       />
     );

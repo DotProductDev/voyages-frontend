@@ -32,7 +32,7 @@ const isNestedChange = (change: PropertyChange) => {
 
 const onNestedCell =
   (colSpan: number) =>
-  (c: PropertyTableRowType): React.TdHTMLAttributes<unknown> =>
+  (c: PropertyTableRowType): React.TdHTMLAttributes<any> =>
     isNestedChange(c.change) ? { colSpan } : {};
 
 interface PropertyTableRowType {
@@ -134,18 +134,16 @@ const PropertyChangesTable = ({
         onClick={() => setExpanded((prev) => !prev)}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
             setExpanded((prev) => !prev);
           }
         }}
-        aria-expanded={expanded}
       >
-        <strong>{convertTextProperty(sectionName!)}</strong>
         {expanded ? (
           <CaretUpOutlined className="expanded-icon" />
         ) : (
-          <CaretDownOutlined style={{ marginLeft: 10, fontSize: 18 }} />
+          <CaretDownOutlined className="expanded-icon" />
         )}
+        <strong>{convertTextProperty(sectionName!)}</strong>
       </div>
 
       {expanded && (
