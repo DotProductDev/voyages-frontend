@@ -45,6 +45,7 @@ const EditExistingVoyage: React.FC<EditExistingVoyageProps> = ({
     if (voyageId) {
       setLoading(true);
       const res = await fetchSubmitEditVoaygesForm(voyageId);
+      console.log({ res });
       if (res.status === 200) {
         setEntity(res.data);
         setChangeSet({
@@ -65,7 +66,7 @@ const EditExistingVoyage: React.FC<EditExistingVoyageProps> = ({
       setLoading(true);
     }
   };
-
+  console.log({ id: entity.entityRef });
   const hasEntity = entity && entity.entityRef.id !== 0;
 
   return (
