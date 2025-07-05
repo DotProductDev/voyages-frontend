@@ -1,15 +1,16 @@
 import { useState, useEffect, ChangeEvent, useCallback } from 'react';
-import Plot from 'react-plotly.js';
-import { Data } from 'plotly.js';
-import VOYAGE_BARGRAPH_OPTIONS from '@/utils/flatfiles/voyages/voyages_bargraph_options.json';
+
 import { Grid, SelectChangeEvent, Skeleton } from '@mui/material';
 import { useWindowSize } from '@react-hook/window-size';
-import { RootState } from '@/redux/store';
+import { Data } from 'plotly.js';
+import Plot from 'react-plotly.js';
 import { useSelector } from 'react-redux';
-import { useGetOptionsQuery } from '@/fetch/voyagesFetch/fetchApiService';
-import { SelectDropdown } from '../../SelectorComponents/SelectDrowdown/SelectDropdown';
+
 import LOADINGLOGO from '@/assets/sv-logo_v2_notext.svg';
-import { RadioSelected } from '../../SelectorComponents/RadioSelected/RadioSelected';
+import { useGetOptionsQuery } from '@/fetch/voyagesFetch/fetchApiService';
+import { useGroupBy } from '@/hooks/useGroupBy';
+import { usePageRouter } from '@/hooks/usePageRouter';
+import { RootState } from '@/redux/store';
 import {
   PlotXYVar,
   VoyagesOptionProps,
@@ -17,17 +18,19 @@ import {
   CurrentPageInitialState,
   BargraphXYVar,
   IRootFilterObjectScatterRequest,
+  LanguageKey,
 } from '@/share/InterfaceTypes';
+import VOYAGE_BARGRAPH_OPTIONS from '@/utils/flatfiles/voyages/voyages_bargraph_options.json';
+import { filtersDataSend } from '@/utils/functions/filtersDataSend';
+import { formatYAxes } from '@/utils/functions/formatYAxesLine';
 import {
   getMobileMaxHeight,
   getMobileMaxWidth,
   maxWidthSize,
 } from '@/utils/functions/maxWidthSize';
-import { useGroupBy } from '@/hooks/useGroupBy';
-import { formatYAxes } from '@/utils/functions/formatYAxesLine';
-import { usePageRouter } from '@/hooks/usePageRouter';
-import { filtersDataSend } from '@/utils/functions/filtersDataSend';
-import { LanguageKey } from '@/share/InterfaceTypes';
+
+import { RadioSelected } from '../../SelectorComponents/RadioSelected/RadioSelected';
+import { SelectDropdown } from '../../SelectorComponents/SelectDrowdown/SelectDropdown';
 
 function BarGraph() {
   const datas = useSelector((state: RootState) => state.getOptions?.value);
@@ -37,23 +40,25 @@ function BarGraph() {
     isLoading,
   } = useGetOptionsQuery(datas);
   const { varName } = useSelector(
-    (state: RootState) => state.rangeSlider as FilterObjectsState
+    (state: RootState) => state.rangeSlider as FilterObjectsState,
   );
   const { styleName: styleNameRoute } = usePageRouter();
   const { currentPage } = useSelector(
-    (state: RootState) => state.getScrollPage as CurrentPageInitialState
+    (state: RootState) => state.getScrollPage as CurrentPageInitialState,
   );
   const { filtersObj } = useSelector((state: RootState) => state.getFilter);
   const { styleName } = useSelector(
-    (state: RootState) => state.getDataSetCollection
+    (state: RootState) => state.getDataSetCollection,
   );
   const { inputSearchValue } = useSelector(
-    (state: RootState) => state.getCommonGlobalSearch
+    (state: RootState) => state.getCommonGlobalSearch,
   );
   const { clusterNodeKeyVariable, clusterNodeValue } = useSelector(
-    (state: RootState) => state.getNodeEdgesAggroutesMapData
+    (state: RootState) => state.getNodeEdgesAggroutesMapData,
   );
-  const { languageValue } = useSelector((state: RootState) => state.getLanguages);
+  const { languageValue } = useSelector(
+    (state: RootState) => state.getLanguages,
+  );
   const lang = languageValue as LanguageKey;
 
   const [error, setError] = useState(false);
@@ -62,10 +67,10 @@ function BarGraph() {
   const [barGraphSelectedY, setSelectedY] = useState<PlotXYVar[]>([]);
   const [barData, setBarData] = useState<Data[]>([]);
   const [xAxes, setXAxes] = useState<string>(
-    VOYAGE_BARGRAPH_OPTIONS.x_vars[0].label[lang]
+    VOYAGE_BARGRAPH_OPTIONS.x_vars[0].label[lang],
   );
   const [yAxes, setYAxes] = useState<string[]>([
-    VOYAGE_BARGRAPH_OPTIONS.y_vars[0].label[lang]
+    VOYAGE_BARGRAPH_OPTIONS.y_vars[0].label[lang],
   ]);
   const [chips, setChips] = useState<string[]>([
     VOYAGE_BARGRAPH_OPTIONS.y_vars[0].var_name,
@@ -87,19 +92,19 @@ function BarGraph() {
         if (key === 'y_vars') {
           setSelectedY(value);
         }
-      }
+      },
     );
   }, []);
   const filters = filtersDataSend(
     filtersObj,
     styleNameRoute!,
     clusterNodeKeyVariable,
-    clusterNodeValue
+    clusterNodeValue,
   );
   const newFilters =
     filters !== undefined &&
     filters!.map((filter) => {
-      const { label, title, ...filteredFilter } = filter;
+      const { ...filteredFilter } = filter;
       return filteredFilter;
     });
   const dataSend: IRootFilterObjectScatterRequest = {
@@ -157,7 +162,7 @@ function BarGraph() {
     (event: ChangeEvent<HTMLInputElement>) => {
       setAggregation(event.target.value);
     },
-    []
+    [],
   );
 
   const handleChangeBarGraphOption = useCallback(
@@ -168,7 +173,7 @@ function BarGraph() {
         [name]: value,
       }));
     },
-    []
+    [],
   );
 
   const handleChangeBarGraphChipYSelected = useCallback(
@@ -185,7 +190,7 @@ function BarGraph() {
         [name]: value,
       }));
     },
-    []
+    [],
   );
 
   if (isLoading) {
@@ -219,7 +224,7 @@ function BarGraph() {
       />
       {loading || yAxes.length === 0 ? (
         <div className="loading-logo-graph">
-          <img src={LOADINGLOGO} />
+          <img src={LOADINGLOGO} alt="loading" />
         </div>
       ) : (
         <Grid style={{ maxWidth: maxWidth, border: '1px solid #ccc' }}>
@@ -228,7 +233,9 @@ function BarGraph() {
             layout={{
               width: getMobileMaxWidth(maxWidth - 5),
               height: getMobileMaxHeight(height),
-              title: 'Bar Graph',
+              title: {
+                text: 'Bar Graph',
+              },
               font: {
                 family: 'Arial, sans-serif',
                 size: maxWidth < 400 ? 7 : 10,

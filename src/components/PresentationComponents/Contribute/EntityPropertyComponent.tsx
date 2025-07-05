@@ -13,7 +13,7 @@ import {
   EntityOwnedProperty,
   materializeNew,
 } from '@dotproductdev/voyages-contribute';
-import { Button } from 'antd';
+import { Button } from '@mui/material';
 
 import { DirectEntityPropertyField } from './DirectEntityPropertyField';
 import { EntityFormProps, EntityForm } from './EntityForm';
@@ -98,7 +98,10 @@ export const EntityPropertyComponent = ({
   const handleOnCloseNumbersTableDialog = () =>
     setOpenNumbersTableDialog(false);
   const handleCreateNew = useCallback((p: EntityOwnedProperty) => {
-    const created = materializeNew(getSchema(p.linkedEntitySchema), crypto.randomUUID());
+    const created = materializeNew(
+      getSchema(p.linkedEntitySchema),
+      crypto.randomUUID(),
+    );
     other.onChange({
       type: 'update',
       entityRef: entity.entityRef,
@@ -107,7 +110,7 @@ export const EntityPropertyComponent = ({
           kind: 'owned',
           property: p.uid,
           ownedEntity: created,
-          changes: []
+          changes: [],
         },
       ],
     });
@@ -116,21 +119,49 @@ export const EntityPropertyComponent = ({
     if (lastChange && lastChange.kind !== 'owned') {
       return <span>BUG: unexpected change type for Owned entity.</span>;
     }
-    const value = entity.data[property.label] ?? lastChange?.ownedEntity ?? null;
+    const value =
+      entity.data[property.label] ?? lastChange?.ownedEntity ?? null;
     if (value === null) {
-      return <>
-        <Button onClick={() => handleCreateNew(property)}>Create</Button>
-      </>
+      return (
+        <div style={{ paddingTop: 10 }}>
+          <Button
+            onClick={() => handleCreateNew(property)}
+            variant="outlined"
+            size="small"
+            sx={{
+              cursor: 'pointer',
+              textTransform: 'unset',
+              fontSize: '0.85rem',
+              width: 50,
+              borderColor: 'rgb(55, 148, 141)',
+              color: 'rgb(55, 148, 141)',
+              height: 28,
+            }}
+          >
+            Create
+          </Button>
+        </div>
+      );
     }
     if (
       isMaterializedEntity(value) &&
       value.entityRef.schema === property.linkedEntitySchema
     ) {
-      if (lastChange && !areMatch(lastChange.ownedEntity.entityRef, value.entityRef)) {
-        if (value.entityRef.type !== "new" && lastChange.ownedEntity.entityRef.type !== "new") {
-          return <span>
-            BUG: unexpected change type for Owned entity. Expected {lastChange.ownedEntity.entityRef.id} but got {value.entityRef.id}.
-            </span>;
+      if (
+        lastChange &&
+        !areMatch(lastChange.ownedEntity.entityRef, value.entityRef)
+      ) {
+        if (
+          value.entityRef.type !== 'new' &&
+          lastChange.ownedEntity.entityRef.type !== 'new'
+        ) {
+          return (
+            <span>
+              BUG: unexpected change type for Owned entity. Expected{' '}
+              {lastChange.ownedEntity.entityRef.id} but got {value.entityRef.id}
+              .
+            </span>
+          );
         }
         // Patch lastChange
         value.entityRef.id = lastChange.ownedEntity.entityRef.id;

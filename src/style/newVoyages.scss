@@ -20,7 +20,7 @@
 
 .collapse-title {
   color: rgb(255, 255, 255) !important;
-  font-size: 1rem !important;
+  font-size: 0.85rem !important;
   font-weight: 700 !important;
   margin: 0;
 }
@@ -35,7 +35,7 @@
     font-size: 0.85rem !important;
     font-weight: 600 !important;
     background: rgb(55, 148, 141);
-    padding: 10px 2px 0px 10px;
+    padding: 4px 2px 0px 10px;
     border-bottom: 1px solid #f9f9f940;
     }
     .ant-collapse-content {
@@ -45,5 +45,8 @@
         border-bottom-right-radius: 3px;
       }
     }
+  }
+  h4 {
+    margin-bottom: 0.25em;
   }
 }

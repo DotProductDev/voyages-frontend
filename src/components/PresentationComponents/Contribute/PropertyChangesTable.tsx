@@ -48,6 +48,7 @@ const PropertyChangesTable = ({
   handleDeleteChange,
 }: PropertyChangesTableProps) => {
   const [expanded, setExpanded] = useState<boolean>(true);
+  console.log({ sectionName });
   const renderCard = useCallback(
     (c: PropertyChange) => (
       <PropertyChangeCard
@@ -138,11 +139,13 @@ const PropertyChangesTable = ({
           }
         }}
       >
-        {expanded ? (
-          <CaretUpOutlined className="expanded-icon" />
-        ) : (
-          <CaretDownOutlined className="expanded-icon" />
-        )}
+        {sectionName ? (
+          expanded ? (
+            <CaretUpOutlined className="expanded-icon" />
+          ) : (
+            <CaretDownOutlined className="expanded-icon" />
+          )
+        ) : null}
         <strong>{convertTextProperty(sectionName!)}</strong>
       </div>
 

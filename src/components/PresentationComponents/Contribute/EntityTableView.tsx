@@ -1,3 +1,6 @@
+/* eslint-disable react-hooks/exhaustive-deps */
+import { useCallback, useMemo } from 'react';
+
 import {
   isMaterializedEntityArray,
   MaterializedEntity,
@@ -5,8 +8,9 @@ import {
   materializeNew,
   areMatch,
   OwnedEntityListChange,
-  OwnedEntityListProperty
+  OwnedEntityListProperty,
 } from '@dotproductdev/voyages-contribute';
+import { Add } from '@mui/icons-material';
 import {
   IconButton,
   Paper,
@@ -16,10 +20,10 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  Box,
 } from '@mui/material';
 import { Typography } from 'antd';
-import { useCallback, useMemo } from 'react';
-import { Add } from '@mui/icons-material';
+
 import { EntityFormProps } from './EntityForm';
 import { EntityTableRow } from './EntityTableRow';
 
@@ -43,18 +47,14 @@ export const EntityTableView = ({
   ...other
 }: EntityTableViewProps & EntityFormProps) => {
   const { label, linkedEntitySchema } = property;
-  // console.log({property, entity, ...other})
   const fieldValue = entity.data[label] ?? [];
-  if (!isMaterializedEntityArray(fieldValue)) {
-    return (
-      <span>
-        BUG: The entity data does not match the expectation of being an array of
-        materialized entities (children)
-      </span>
-    );
-  }
   const childSchema = getSchema(linkedEntitySchema);
+
   const children = useMemo(() => {
+    if (!isMaterializedEntityArray(fieldValue)) {
+      return [];
+    }
+
     const res: MaterializedEntity[] = [...fieldValue];
     if (lastChange) {
       const added = lastChange.modified.filter(
@@ -81,7 +81,27 @@ export const EntityTableView = ({
     });
     return res;
   }, [entity, lastChange, childSchema, fieldValue]);
+
+  if (!isMaterializedEntityArray(fieldValue)) {
+    return (
+      <Box
+        sx={{
+          p: 2,
+          textAlign: 'center',
+          color: 'error.main',
+          backgroundColor: 'error.light',
+          borderRadius: 1,
+          mb: 2,
+        }}
+      >
+        BUG: The entity data does not match the expectation of being an array of
+        materialized entities (children)
+      </Box>
+    );
+  }
+
   const onChange = other.onChange;
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const handleAdd = useCallback(() => {
     const change = lastChange ?? createEmptyChange(property.uid);
     const childProp = childSchema.properties.find(
@@ -92,7 +112,10 @@ export const EntityTableView = ({
         `Invalid schema: the child property "${property.childBackingProp}" was not found in ${childSchema.name}`,
       );
     }
-    const added = materializeNew(childSchema, `${new Date().getTime()}${crypto.randomUUID()}`);
+    const added = materializeNew(
+      childSchema,
+      `${new Date().getTime()}${crypto.randomUUID()}`,
+    );
     onChange({
       type: 'update',
       entityRef: entity.entityRef,
@@ -111,6 +134,7 @@ export const EntityTableView = ({
                   changed: entity.entityRef.id,
                 },
               ],
+              property: '',
             },
           ],
         },
@@ -119,22 +143,62 @@ export const EntityTableView = ({
   }, [entity, lastChange, property, childSchema, onChange]);
 
   return (
-    <div style={{ marginBottom: '10px' }}>
-      <TableContainer component={Paper}>
+    <Box sx={{ mb: 3 }}>
+      <TableContainer
+        component={Paper}
+        sx={{
+          boxShadow: 2,
+          borderRadius: 2,
+          overflow: 'hidden',
+        }}
+      >
         <Table aria-label="collapsible table">
           <TableHead>
-            <TableRow>
-              <TableCell />
-              <TableCell>
+            <TableRow sx={{ backgroundColor: 'grey.50' }}>
+              <TableCell
+                sx={{
+                  width: 48,
+                  padding: '2px 16px',
+                  borderColor: 'divider',
+                }}
+              />
+              <TableCell
+                sx={{
+                  padding: '2px 16px',
+                  borderColor: 'divider',
+                }}
+              >
                 <Typography.Title
                   level={5}
-                  style={{ color: 'rgb(55, 148, 141)' }}
+                  style={{
+                    color: 'rgb(55, 148, 141)',
+                    margin: 0,
+                    fontWeight: 600,
+                  }}
                 >
                   {property.label}
                 </Typography.Title>
               </TableCell>
-              <TableCell align="right">
-                <IconButton size="small" color="success" onClick={handleAdd}>
+              <TableCell
+                align="right"
+                sx={{
+                  padding: '2px 16px',
+                  borderColor: 'divider',
+                }}
+              >
+                <IconButton
+                  size="small"
+                  color="success"
+                  onClick={handleAdd}
+                  sx={{
+                    padding: '8px',
+                    '&:hover': {
+                      backgroundColor: '#13c2c2',
+                      transform: 'scale(1.05)',
+                    },
+                    transition: 'all 0.2s ease-in-out',
+                  }}
+                >
                   <Add />
                 </IconButton>
               </TableCell>
@@ -155,6 +219,6 @@ export const EntityTableView = ({
           </TableBody>
         </Table>
       </TableContainer>
-    </div>
+    </Box>
   );
 };

@@ -1,13 +1,19 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, ChangeEvent, useCallback } from 'react';
-import Plot from 'react-plotly.js';
-import { Data } from 'plotly.js';
-import VOYAGE_SCATTER_OPTIONS from '@/utils/flatfiles/voyages/voyages_scatter_options.json';
+
 import { Grid, SelectChangeEvent } from '@mui/material';
-import LOADINGLOGO from '@/assets/sv-logo_v2_notext.svg';
 import { useWindowSize } from '@react-hook/window-size';
-import { RootState } from '@/redux/store';
+import { Data } from 'plotly.js';
+import Plot from 'react-plotly.js';
 import { useSelector } from 'react-redux';
+
+import LOADINGLOGO from '@/assets/sv-logo_v2_notext.svg';
+import '@/style/page.scss';
+import NoDataState from '@/components/NoResultComponents/NoDataState';
 import { useGetOptionsQuery } from '@/fetch/voyagesFetch/fetchApiService';
+import { useGroupBy } from '@/hooks/useGroupBy';
+import { usePageRouter } from '@/hooks/usePageRouter';
+import { RootState } from '@/redux/store';
 import {
   PlotXYVar,
   VoyagesOptionProps,
@@ -16,23 +22,21 @@ import {
   IRootFilterObjectScatterRequest,
   LanguageKey,
 } from '@/share/InterfaceTypes';
-import '@/style/page.scss';
-import { SelectDropdown } from '../../SelectorComponents/SelectDrowdown/SelectDropdown';
-import { RadioSelected } from '../../SelectorComponents/RadioSelected/RadioSelected';
+import VOYAGE_SCATTER_OPTIONS from '@/utils/flatfiles/voyages/voyages_scatter_options.json';
+import { filtersDataSend } from '@/utils/functions/filtersDataSend';
+import { formatYAxes } from '@/utils/functions/formatYAxesLine';
 import {
   getMobileMaxHeight,
   getMobileMaxWidth,
   maxWidthSize,
 } from '@/utils/functions/maxWidthSize';
-import { useGroupBy } from '@/hooks/useGroupBy';
-import { formatYAxes } from '@/utils/functions/formatYAxesLine';
-import { filtersDataSend } from '@/utils/functions/filtersDataSend';
-import { usePageRouter } from '@/hooks/usePageRouter';
-import NoDataState from '@/components/NoResultComponents/NoDataState';
+
+import { RadioSelected } from '../../SelectorComponents/RadioSelected/RadioSelected';
+import { SelectDropdown } from '../../SelectorComponents/SelectDrowdown/SelectDropdown';
 
 function Scatter() {
   const datas = useSelector(
-    (state: RootState | any) => state.getOptions?.value
+    (state: RootState | any) => state.getOptions?.value,
   );
   const {
     data: options_flat,
@@ -40,23 +44,25 @@ function Scatter() {
     isLoading,
   } = useGetOptionsQuery(datas);
   const { varName } = useSelector(
-    (state: RootState) => state.rangeSlider as FilterObjectsState
+    (state: RootState) => state.rangeSlider as FilterObjectsState,
   );
   const [error, setError] = useState(false);
   const { currentPage } = useSelector(
-    (state: RootState) => state.getScrollPage as CurrentPageInitialState
+    (state: RootState) => state.getScrollPage as CurrentPageInitialState,
   );
   const { filtersObj } = useSelector((state: RootState) => state.getFilter);
   const { styleName } = useSelector(
-    (state: RootState) => state.getDataSetCollection
+    (state: RootState) => state.getDataSetCollection,
   );
   const { inputSearchValue } = useSelector(
-    (state: RootState) => state.getCommonGlobalSearch
+    (state: RootState) => state.getCommonGlobalSearch,
   );
   const { clusterNodeKeyVariable, clusterNodeValue } = useSelector(
-    (state: RootState) => state.getNodeEdgesAggroutesMapData
+    (state: RootState) => state.getNodeEdgesAggroutesMapData,
   );
-  const { languageValue } = useSelector((state: RootState) => state.getLanguages);
+  const { languageValue } = useSelector(
+    (state: RootState) => state.getLanguages,
+  );
   const lang = languageValue as LanguageKey;
 
   const { styleName: styleNameRoute } = usePageRouter();
@@ -64,7 +70,7 @@ function Scatter() {
   const [scatterSelectedX, setSelectedX] = useState<PlotXYVar[]>([]);
   const [scatterSelectedY, setSelectedY] = useState<PlotXYVar[]>([]);
   const [xAxes, setXAxes] = useState<string>(
-    VOYAGE_SCATTER_OPTIONS.x_vars[0].label[lang]
+    VOYAGE_SCATTER_OPTIONS.x_vars[0].label[lang],
   );
   const [yAxes, setYAxes] = useState<string[]>([
     VOYAGE_SCATTER_OPTIONS.y_vars[0].label[lang],
@@ -90,7 +96,7 @@ function Scatter() {
         if (key === 'y_vars') {
           setSelectedY(value);
         }
-      }
+      },
     );
   }, []);
 
@@ -98,12 +104,12 @@ function Scatter() {
     filtersObj,
     styleNameRoute!,
     clusterNodeKeyVariable,
-    clusterNodeValue
+    clusterNodeValue,
   );
   const newFilters =
     filters !== undefined &&
     filters!.map((filter) => {
-      const { label, title, ...filteredFilter } = filter;
+      const { ...filteredFilter } = filter;
       return filteredFilter;
     });
   const dataSend: IRootFilterObjectScatterRequest = {
@@ -162,7 +168,7 @@ function Scatter() {
     (event: ChangeEvent<HTMLInputElement>) => {
       setAggregation(event.target.value);
     },
-    []
+    [],
   );
 
   const handleChangeScatterOption = useCallback(
@@ -176,7 +182,7 @@ function Scatter() {
         setXAxes(title.label[lang]);
       }
     },
-    []
+    [lang, scatterSelectedX],
   );
 
   const handleChangeScatterChipYSelected = useCallback(
@@ -195,7 +201,7 @@ function Scatter() {
       const newYAxesTitles = scatterSelectedY.map((title) => title.label[lang]);
       setYAxes(newYAxesTitles);
     },
-    []
+    [lang, scatterSelectedY],
   );
 
   return (
@@ -221,7 +227,7 @@ function Scatter() {
       />
       {isLoading ? (
         <div className="loading-logo-graph">
-          <img src={LOADINGLOGO} />
+          <img src={LOADINGLOGO} alt="loading" />
         </div>
       ) : yAxes.length > 0 ? (
         <Grid style={{ maxWidth: maxWidth, border: '1px solid #ccc' }}>
@@ -230,7 +236,9 @@ function Scatter() {
             layout={{
               width: getMobileMaxWidth(maxWidth - 5),
               height: getMobileMaxHeight(height),
-              title: 'Line Graph',
+              title: {
+                text: 'Line Graph',
+              },
               font: {
                 family: 'Arial, sans-serif',
                 size: maxWidth < 400 ? 7 : 10,

@@ -1,6 +1,9 @@
+import { useCallback, useMemo, useState } from 'react';
+
 import {
   applyUpdate,
-  cloneEntity, MaterializedEntity,
+  cloneEntity,
+  MaterializedEntity,
   EntitySchema,
   areMatch,
   EntityChange,
@@ -11,15 +14,20 @@ import {
   OwnedEntityListProperty,
   materializeNew,
   getSchema,
-  OwnedEntityChange
+  OwnedEntityChange,
 } from '@dotproductdev/voyages-contribute';
+import {
+  Delete,
+  Restore,
+  KeyboardArrowUp,
+  KeyboardArrowDown,
+} from '@mui/icons-material';
 import { Box, IconButton, TableCell, TableRow, Collapse } from '@mui/material';
-import { useCallback, useMemo, useState } from 'react';
-import { Delete, Restore } from '@mui/icons-material';
-import { EntityForm, EntityFormProps } from './EntityForm';
-import { KeyboardArrowUp, KeyboardArrowDown } from '@mui/icons-material';
-import { createEmptyChange } from './EntityTableView';
+
 import { useDebounce } from '@/hooks/useDebounce';
+
+import { EntityForm, EntityFormProps } from './EntityForm';
+import { createEmptyChange } from './EntityTableView';
 
 interface EntityTableRowProps {
   schema: EntitySchema;
@@ -72,7 +80,14 @@ export const EntityTableRow = ({
         ],
       });
     }
-  }, [isDeleted, lastChange, onChange]);
+  }, [
+    isDeleted,
+    lastChange,
+    onChange,
+    entity.entityRef,
+    parent.entityRef,
+    property.uid,
+  ]);
 
   const handleRowChange = useCallback(
     (c: EntityChange) => {
@@ -147,7 +162,10 @@ export const EntityTableRow = ({
     let e = entity;
     if (debouncedPropChanges.length > 0) {
       e = cloneEntity(entity);
-      if (entity.entityRef.type === "new" && Object.keys(entity.data).length === 0) {
+      if (
+        entity.entityRef.type === 'new' &&
+        Object.keys(entity.data).length === 0
+      ) {
         // A new entity may be empty to avoid unnecessary data.
         e = materializeNew(
           getSchema(entity.entityRef.schema),
@@ -172,7 +190,12 @@ export const EntityTableRow = ({
           },
         }}
       >
-        <TableCell>
+        <TableCell
+          sx={{
+            padding: '2px 16px',
+            borderColor: 'divider',
+          }}
+        >
           {schema.contributionMode !== 'ReadOnly' && (
             <IconButton
               aria-label="expand row"
@@ -186,7 +209,7 @@ export const EntityTableRow = ({
         <TableCell
           component="th"
           scope="row"
-          sx={{ fontWeight: 500, color: '#333' }}
+          sx={{ fontWeight: 500, color: '#333', padding: '2px 16px' }}
         >
           <span
             dangerouslySetInnerHTML={{
@@ -194,7 +217,13 @@ export const EntityTableRow = ({
             }}
           ></span>
         </TableCell>
-        <TableCell align="right">
+        <TableCell
+          align="right"
+          sx={{
+            padding: '2px 16px',
+            borderColor: 'divider',
+          }}
+        >
           <IconButton
             size="small"
             color={isDeleted ? 'primary' : 'error'}

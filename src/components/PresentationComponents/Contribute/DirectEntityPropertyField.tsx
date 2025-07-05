@@ -43,7 +43,7 @@ export const DirectEntityPropertyField = ({
   const [comments, internalSetComments] = useState<string | undefined>();
   const value = lastChange
     ? lastChange.changed
-    : (entity.data[label] ?? null) as DirectPropertyChange['changed'];
+    : ((entity.data[label] ?? null) as DirectPropertyChange['changed']);
 
   const handleChange = useCallback(
     (changed: DirectPropertyChange['changed']) => {
@@ -121,14 +121,16 @@ export const DirectEntityPropertyField = ({
           onChange={(v) => handleInputChange(v)}
         />
       ) : (
-        <Input
-          className={`truncate-input ${lastChange ? 'changedEntityProperty' : ''}`}
-          type={kind}
-          placeholder={`Enter ${lowerCaseFirstLetter(label)}`}
-          style={{ width: 'calc(100% - 20px)' }}
-          value={value === null ? '' : value + ''}
-          onChange={(e) => handleInputChange(e.target.value)}
-        />
+        <>
+          <Input
+            className={`truncate-input ${lastChange ? 'changedEntityProperty' : ''}`}
+            type={kind}
+            placeholder={`Enter ${lowerCaseFirstLetter(label)}`}
+            style={{ width: 'calc(100% - 20px)' }}
+            value={value === null ? '' : value + ''}
+            onChange={(e) => handleInputChange(e.target.value)}
+          />
+        </>
       )}
       <EntityPropertyChangeCommentBox
         property={property}

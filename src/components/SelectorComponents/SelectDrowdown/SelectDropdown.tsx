@@ -1,3 +1,5 @@
+import { FunctionComponent, ReactNode } from 'react';
+
 import {
   Box,
   FormControl,
@@ -8,11 +10,15 @@ import {
   Chip,
   OutlinedInput,
 } from '@mui/material';
-import { FunctionComponent, ReactNode } from 'react';
-import { PlotXYVar, VoyagesOptionProps, LanguageKey } from '@/share/InterfaceTypes';
-import { getBoderColor } from '@/utils/functions/getColorStyle';
 import { useSelector } from 'react-redux';
+
 import { RootState } from '@/redux/store';
+import {
+  PlotXYVar,
+  VoyagesOptionProps,
+  LanguageKey,
+} from '@/share/InterfaceTypes';
+import { getBoderColor } from '@/utils/functions/getColorStyle';
 
 interface SelectDropdownProps {
   selectedX: PlotXYVar[];
@@ -22,7 +28,7 @@ interface SelectDropdownProps {
   handleChange: (event: SelectChangeEvent<string>, name: string) => void;
   handleChangeMultipleYSelected?: (
     event: SelectChangeEvent<string[]>,
-    name: string
+    name: string,
   ) => void;
   aggregation: string;
   maxWidth?: number;
@@ -64,9 +70,11 @@ export const SelectDropdown: FunctionComponent<SelectDropdownProps> = ({
     },
   };
   const { styleName } = useSelector(
-    (state: RootState) => state.getDataSetCollection
+    (state: RootState) => state.getDataSetCollection,
   );
-  const { languageValue } = useSelector((state: RootState) => state.getLanguages);
+  const { languageValue } = useSelector(
+    (state: RootState) => state.getLanguages,
+  );
   const lang = languageValue as LanguageKey;
 
   const isDisabledX = (option: PlotXYVar) => {
@@ -108,9 +116,10 @@ export const SelectDropdown: FunctionComponent<SelectDropdownProps> = ({
             onChange={(event: SelectChangeEvent<string>) => {
               handleChange(event, 'x_vars');
               const selectedOption = selectedX.find(
-                (option) => option.var_name === event.target.value
+                (option) => option.var_name === event.target.value,
               );
-              setXAxes && setXAxes(selectedOption ? selectedOption.label[lang] : '');
+              setXAxes &&
+                setXAxes(selectedOption ? selectedOption.label[lang] : '');
             }}
             name="x_vars"
           >
@@ -152,7 +161,9 @@ export const SelectDropdown: FunctionComponent<SelectDropdownProps> = ({
                 if (handleChangeMultipleYSelected) {
                   handleChangeMultipleYSelected(event, 'y_vars');
                   const selectedYOptions = selectedY
-                    .filter((option) => event.target.value.includes(option.var_name))
+                    .filter((option) =>
+                      event.target.value.includes(option.var_name),
+                    )
                     .map((option) => option.label[lang]);
                   setYAxes && setYAxes(selectedYOptions);
                 }
@@ -171,7 +182,7 @@ export const SelectDropdown: FunctionComponent<SelectDropdownProps> = ({
                 >
                   {value.map((option: string, index: number) => {
                     const selectedOption = selectedY.find(
-                      (item) => item.var_name === option
+                      (item) => item.var_name === option,
                     );
                     return (
                       <Chip
@@ -192,7 +203,7 @@ export const SelectDropdown: FunctionComponent<SelectDropdownProps> = ({
                 const label = displayYLabel(
                   aggregation!,
                   option.agg_fns!,
-                  option.label[lang]
+                  option.label[lang],
                 );
                 return (
                   label !== null && (
@@ -237,7 +248,7 @@ export const SelectDropdown: FunctionComponent<SelectDropdownProps> = ({
             onChange={(event: SelectChangeEvent<string>) => {
               handleChange(event, 'y_vars');
               const selectYoption = selectedY.find(
-                (option) => option.var_name === event.target.value
+                (option) => option.var_name === event.target.value,
               );
               setYAxesPie &&
                 setYAxesPie(selectYoption ? selectYoption.label[lang] : '');
@@ -269,7 +280,7 @@ export const SelectDropdown: FunctionComponent<SelectDropdownProps> = ({
 const displayYLabel = (
   aggregation: string,
   agg_fns: string[],
-  label: string
+  label: string,
 ): string | null => {
   let yLabel = null;
   if (

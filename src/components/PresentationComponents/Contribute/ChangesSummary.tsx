@@ -1,17 +1,18 @@
-import { Button, Typography, Timeline, Space } from 'antd';
 import {
-    ReloadOutlined,
-    SaveOutlined,
-    EditOutlined,
-    PlusOutlined,
-    DeleteOutlined,
+  ReloadOutlined,
+  SaveOutlined,
+  EditOutlined,
+  PlusOutlined,
+  DeleteOutlined,
 } from '@ant-design/icons';
 import {
-    EntityChange,
-    MaterializedEntity,
+  EntityChange,
+  MaterializedEntity,
 } from '@dotproductdev/voyages-contribute';
-import PropertyChangesList from './PropertyChangesList';
 import { Preview } from '@mui/icons-material';
+import { Button, Typography, Timeline, Space } from 'antd';
+
+import PropertyChangesList from './PropertyChangesList';
 const { Text } = Typography;
 
 const iconMap = {
