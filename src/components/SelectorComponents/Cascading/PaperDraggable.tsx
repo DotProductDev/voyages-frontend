@@ -1,8 +1,16 @@
-import { Paper } from '@mui/material';
 import { useRef } from 'react';
-import Draggable from 'react-draggable';
+
+import { Paper } from '@mui/material';
 import { PaperProps } from '@mui/material/Paper';
-import { PaperDraggableStyle, PaperDraggableTimeLapseStyle,PaperDraggableContributeStyle, PaperDraggableNumberTableStyle, PaperDraggablePreviewStyle } from '@/styleMUI';
+import Draggable from 'react-draggable';
+
+import {
+  PaperDraggableStyle,
+  PaperDraggableTimeLapseStyle,
+  PaperDraggableContributeStyle,
+  PaperDraggableNumberTableStyle,
+  PaperDraggablePreviewStyle,
+} from '@/styleMUI';
 
 export function PaperDraggable(props: PaperProps) {
   const paperRef = useRef<HTMLDivElement>(null);
@@ -36,34 +44,56 @@ export function PaperDraggableTimeLapse(props: PaperProps) {
   );
 }
 
-
-
-
 export function PaperDraggableLinkEntityAddComponent(props: PaperProps) {
   const paperRef = useRef<HTMLDivElement>(null);
 
   return (
     <Draggable
-      handle="#draggable-dialog-title-contribute"
+      handle="#draggable-dialog-add-new"
       cancel={'[class*="MuiDialogContent-root"]'}
       nodeRef={paperRef}
     >
-      <Paper {...props} ref={paperRef}   style={{ ...PaperDraggableContributeStyle }} />
+      <Paper
+        {...props}
+        ref={paperRef}
+        style={{ ...PaperDraggableContributeStyle }}
+      />
     </Draggable>
   );
 }
 
+export function PaperDraggableLinkEntityModifyComponent(props: PaperProps) {
+  const paperRef = useRef<HTMLDivElement>(null);
+
+  return (
+    <Draggable
+      handle="#draggable-dialog-modify"
+      cancel={'[class*="MuiDialogContent-root"]'}
+      nodeRef={paperRef}
+    >
+      <Paper
+        {...props}
+        ref={paperRef}
+        style={{ ...PaperDraggableContributeStyle }}
+      />
+    </Draggable>
+  );
+}
 
 export function PaperDraggableNumbersTable(props: PaperProps) {
   const paperRef = useRef<HTMLDivElement>(null);
 
   return (
     <Draggable
-      handle="#draggable-dialog-title-contribute"
+      handle="#draggable-dialog-nubmer"
       cancel={'[class*="MuiDialogContent-root"]'}
       nodeRef={paperRef}
     >
-      <Paper {...props} ref={paperRef}   style={{ ...PaperDraggableNumberTableStyle }} />
+      <Paper
+        {...props}
+        ref={paperRef}
+        style={{ ...PaperDraggableNumberTableStyle }}
+      />
     </Draggable>
   );
 }
@@ -77,7 +107,11 @@ export function PaperDraggableLinkEntityPreviewChange(props: PaperProps) {
       cancel={'[class*="MuiDialogContent-root"]'}
       nodeRef={paperRef}
     >
-      <Paper {...props} ref={paperRef}   style={{ ...PaperDraggablePreviewStyle }} />
+      <Paper
+        {...props}
+        ref={paperRef}
+        style={{ ...PaperDraggablePreviewStyle }}
+      />
     </Draggable>
   );
 }

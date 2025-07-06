@@ -1,12 +1,16 @@
+import { useCallback, useEffect, useState } from 'react';
+
 import {
   LinkedEntitySelectionChange,
   MaterializedEntity,
   LinkedEntityProperty,
   getSchema,
   materializeNew,
-  EntityChange, EntityUpdate,
-  addToChangeSet
+  EntityChange,
+  EntityUpdate,
+  addToChangeSet,
 } from '@dotproductdev/voyages-contribute';
+import { Close } from '@mui/icons-material';
 import {
   Button,
   Stack,
@@ -16,12 +20,16 @@ import {
   IconButton,
 } from '@mui/material';
 import { Form } from 'antd';
-import { useCallback, useEffect, useState } from 'react';
-import { EntityForm, EntityFormProps } from './EntityForm';
+
 import { StyleDialog } from '@/styleMUI';
-import { Close } from '@mui/icons-material';
+
+import { EntityForm, EntityFormProps } from './EntityForm';
+
 import '@/style/contributeContent.scss';
-import { PaperDraggableLinkEntityAddComponent } from '@/components/SelectorComponents/Cascading/PaperDraggable';
+import {
+  PaperDraggableLinkEntityAddComponent,
+  PaperDraggableLinkEntityModifyComponent,
+} from '@/components/SelectorComponents/Cascading/PaperDraggable';
 import FooterModal from '@/components/commonComponents/FooterModal';
 
 export interface LinkedEntityPropertyComponentProps {
@@ -39,12 +47,13 @@ const LinkedEntityAddNewComponent = (
   const { linkedEntitySchema, uid } = property;
 
   const [open, setOpen] = useState(false);
+  const [draggable, setDraggable] = useState('add');
   const [addedEntity, setAddedEntity] = useState<
     MaterializedEntity | undefined
   >(undefined);
   const [localChanges, setLocalChanges] = useState<EntityUpdate | undefined>();
   const linkedSchema = getSchema(linkedEntitySchema);
-
+  console.log({ draggable });
   const onClose = useCallback(() => setOpen(false), []);
 
   useEffect(() => {
@@ -83,13 +92,21 @@ const LinkedEntityAddNewComponent = (
     [onChange, entity, uid, comments],
   );
 
-  const handleAddOrModify = useCallback(() => {
-    if (addedEntity === undefined) {
-      const added = materializeNew(linkedSchema, crypto.randomUUID());
-      editAdded(added, localChanges);
-    }
-    setOpen(true);
-  }, [addedEntity, editAdded]);
+  const handleAddOrModify = useCallback(
+    (check: string) => {
+      if (addedEntity === undefined) {
+        const added = materializeNew(linkedSchema, crypto.randomUUID());
+        editAdded(added, localChanges);
+      }
+      if (check === 'modify') {
+        setDraggable('modify');
+      } else {
+        setDraggable('add');
+      }
+      setOpen(true);
+    },
+    [addedEntity, linkedSchema, editAdded, localChanges],
+  );
 
   const handleClear = useCallback(() => {
     setLocalChanges(undefined);
@@ -120,7 +137,7 @@ const LinkedEntityAddNewComponent = (
     },
     [addedEntity, editAdded],
   );
-
+  console.log({ addedEntity });
   return (
     <>
       <Stack
@@ -130,7 +147,10 @@ const LinkedEntityAddNewComponent = (
       >
         <Button
           variant="contained"
-          onClick={handleAddOrModify}
+          onClick={() => {
+            const isAddOrModyfy = addedEntity !== undefined ? 'modify' : 'add';
+            handleAddOrModify(isAddOrModyfy);
+          }}
           className="button-save-contribute"
           sx={{
             cursor: 'pointer',
@@ -173,8 +193,16 @@ const LinkedEntityAddNewComponent = (
         }}
         fullWidth
         maxWidth="sm"
-        PaperComponent={PaperDraggableLinkEntityAddComponent}
-        aria-labelledby="draggable-dialog-title-contribute"
+        PaperComponent={
+          draggable === 'modify'
+            ? PaperDraggableLinkEntityModifyComponent
+            : PaperDraggableLinkEntityAddComponent
+        }
+        aria-labelledby={
+          draggable === 'modify'
+            ? 'draggable-dialog-modify'
+            : 'draggable-dialog-add-new'
+        }
       >
         <DialogTitle
           sx={{
@@ -209,7 +237,7 @@ const LinkedEntityAddNewComponent = (
           }}
         >
           {open && addedEntity && (
-            <Form layout="vertical">
+            <Form>
               <EntityForm
                 {...other}
                 changes={localChanges ? [localChanges] : []}

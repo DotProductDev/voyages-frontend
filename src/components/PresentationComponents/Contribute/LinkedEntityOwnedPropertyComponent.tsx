@@ -66,7 +66,7 @@ export const LinkedEntityOwnedPropertyComponent = ({
       type: 'delete',
       entityRef: value.entityRef,
     });
-  }, [value, entity, property]);
+  }, [value, entity, property, onChange]);
   const handleSet = useCallback(() => {
     // Materialize a new entity
     const owned = materializeNew(schema, crypto.randomUUID());

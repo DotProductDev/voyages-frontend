@@ -1,15 +1,19 @@
 import React from 'react';
+
 import {
   EntityChange,
   TableChange,
   MaterializedEntity,
   TableProperty,
 } from '@dotproductdev/voyages-contribute';
+
 import '@/style/numberTable.scss';
-import { StyleDialog } from '@/styleMUI';
-import { Dialog, DialogContent, DialogTitle, IconButton } from '@mui/material';
 import { Close } from '@mui/icons-material';
+import { Dialog, DialogContent, DialogTitle, IconButton } from '@mui/material';
+
 import { PaperDraggableNumbersTable } from '@/components/SelectorComponents/Cascading/PaperDraggable';
+import { StyleDialog } from '@/styleMUI';
+
 import NumbersTableComponent from './NumbersTableComponent';
 
 interface NumbersTableDialogProps {
@@ -39,7 +43,7 @@ const NumbersTableDialog: React.FC<NumbersTableDialogProps> = ({
       fullWidth
       maxWidth="sm"
       PaperComponent={PaperDraggableNumbersTable}
-      aria-labelledby="draggable-dialog-title-contribute"
+      aria-labelledby="draggable-dialog-nubmer"
     >
       <DialogTitle
         sx={{
