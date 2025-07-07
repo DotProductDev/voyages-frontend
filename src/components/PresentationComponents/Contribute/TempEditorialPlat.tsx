@@ -10,9 +10,10 @@ import {
 } from '@dotproductdev/voyages-contribute';
 import { Box, Typography, Button, Pagination } from '@mui/material';
 import { AgGridReact } from 'ag-grid-react';
+
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-alpine.css';
-
+import '@/style/table.scss';
 import { BASEURLNODE } from '@/share/AUTH_BASEURL';
 import { CustomTablePagination } from '@/styleMUI';
 
@@ -344,22 +345,22 @@ export const TempEditorialPlat: React.FC<TempEditorialPlatProps> = ({
     {
       headerName: 'Title',
       field: 'title',
+      valueGetter: (params: any) => params.data?.title,
+      tooltipValueGetter: (params: any) => params.data?.title,
       flex: 1,
     },
     {
       headerName: 'Author',
       field: 'author',
-      flex: 1,
-    },
-    {
-      headerName: 'ID',
-      field: 'id',
+      valueGetter: (params: any) => params.data?.author,
+      tooltipValueGetter: (params: any) => params.data?.author,
       flex: 1,
     },
     {
       headerName: 'Comments',
-      field: 'comments',
-      flex: 2,
+      valueGetter: (params: any) => params.data?.comments,
+      tooltipValueGetter: (params: any) => params.data?.comments,
+      flex: 1,
     },
     {
       headerName: 'Date',
@@ -370,9 +371,10 @@ export const TempEditorialPlat: React.FC<TempEditorialPlatProps> = ({
     },
     {
       headerName: 'Voyage ID',
-      valueGetter: (params: any) => {
-        return params.data?.changes?.[0]?.entityRef?.id || '';
-      },
+      valueGetter: (params: any) =>
+        params.data?.changes?.[0]?.entityRef?.id || '',
+      tooltipValueGetter: (params: any) =>
+        `Voyage ID: ${params.data?.changes?.[0]?.entityRef?.id || ''}`,
       flex: 1,
     },
     {
@@ -384,6 +386,15 @@ export const TempEditorialPlat: React.FC<TempEditorialPlatProps> = ({
         return (
           ship?.changes?.find((s: any) => s.property === 'VoyageShip_ship_name')
             ?.changed || ''
+        );
+      },
+      tooltipValueGetter: (params: any) => {
+        const ship = params.data?.changes?.[0]?.changes?.find(
+          (c: any) => c.kind === 'owned' && c.property === 'Voyage_Ship',
+        );
+        return (
+          ship?.changes?.find((s: any) => s.property === 'VoyageShip_ship_name')
+            ?.changed || '-'
         );
       },
       flex: 1,
@@ -398,6 +409,16 @@ export const TempEditorialPlat: React.FC<TempEditorialPlatProps> = ({
           itinerary?.changes?.find(
             (c: any) => c.property === 'VoyageItinerary_port_of_departure_id',
           )?.changed?.data?.Name || ''
+        );
+      },
+      tooltipValueGetter: (params: any) => {
+        const ship = params.data?.changes?.[0]?.changes?.find(
+          (c: any) => c.kind === 'owned' && c.property === 'Voyage_Itinerary',
+        );
+        return (
+          ship?.changes?.find(
+            (s: any) => s.property === 'VoyageItinerary_port_of_departure_id',
+          )?.changed || '-'
         );
       },
       flex: 1,
@@ -489,6 +510,7 @@ export const TempEditorialPlat: React.FC<TempEditorialPlatProps> = ({
               theme="legacy"
               pagination={true}
               suppressPaginationPanel={true}
+              getRowClass={() => 'custom-pointer-row'}
             />
           </div>
           <div className="tableContainer">
