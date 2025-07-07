@@ -1,24 +1,20 @@
-import { useEffect, useMemo, useState } from 'react';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { useCallback, useMemo, useRef, useState } from 'react';
 
 import {
   ChangeSet,
-  Contribution,
   EntityUpdate,
   getSchema,
   materializeNew,
   PropertyAccessLevel,
 } from '@dotproductdev/voyages-contribute';
-import {
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-} from '@mui/material';
+import { Box, Typography, Button, Pagination } from '@mui/material';
+import { AgGridReact } from 'ag-grid-react';
+import 'ag-grid-community/styles/ag-grid.css';
+import 'ag-grid-community/styles/ag-theme-alpine.css';
 
 import { BASEURLNODE } from '@/share/AUTH_BASEURL';
+import { CustomTablePagination } from '@/styleMUI';
 
 import { ContributionForm } from './ContributionForm';
 
@@ -187,6 +183,7 @@ const tempContrib: EntityUpdate = {
       modified: [
         {
           kind: 'owned',
+          property: 'Voyage_Enslavement relations',
           ownedEntity: {
             entityRef: {
               id: 'b3d1d073-ad78-46c9-b084-ae5c49a335ae',
@@ -220,6 +217,7 @@ const tempContrib: EntityUpdate = {
               modified: [
                 {
                   kind: 'owned',
+                  property: 'EnslavementRelation_Enslavers in relation',
                   ownedEntity: {
                     entityRef: {
                       id: '62775ecb-9479-4756-8c4a-7c52910ec1c1',
@@ -278,6 +276,7 @@ const tempContrib: EntityUpdate = {
                       modified: [
                         {
                           kind: 'owned',
+                          property: 'EnslaverInRelation_Roles',
                           ownedEntity: {
                             entityRef: {
                               id: '2da11626-69fa-43d6-9a2b-614b6989ea2a',
@@ -319,78 +318,220 @@ const tempContrib: EntityUpdate = {
     },
   ],
 };
-
 const _contribs: ChangeSet[] = [tempContrib].map((u) => ({
-  id: 'mock',
+  id: 1,
   author: 'Mock author',
   title: `Mock Contribution for Voyage #${u.entityRef.id}`,
   changes: [u],
   comments: 'This is a mock contribution for testing purposes.',
   timestamp: new Date().getTime(),
 }));
+interface TempEditorialPlatProps {
+  openSideBar: boolean;
+}
 
-export const TempEditorialPlat = () => {
+export const TempEditorialPlat: React.FC<TempEditorialPlatProps> = ({
+  openSideBar,
+}) => {
   const [active, setActive] = useState<ChangeSet | undefined>(undefined);
   const [contribs, setContribs] = useState<ChangeSet[]>(_contribs);
-  const empty = useMemo(
-    () =>
-      active
-        ? materializeNew(
-            getSchema(active.changes[0].entityRef.schema),
-            active.changes?.[0].entityRef.id,
-          )
-        : undefined,
-    [active],
-  );
-  useEffect(() => {
-    // Load contributions from the server.
-    const load = async () => {
-      try {
-        const res = await fetch(
-          `${BASEURLNODE}/contributions?page=1&limit=100`,
+  const [page, setPage] = useState(0);
+  const [totalResultsCount, setTotalResultsCount] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(20);
+  const gridRef = useRef<any>(null);
+
+  const columnDefs = [
+    {
+      headerName: 'Title',
+      field: 'title',
+      flex: 1,
+    },
+    {
+      headerName: 'Author',
+      field: 'author',
+      flex: 1,
+    },
+    {
+      headerName: 'ID',
+      field: 'id',
+      flex: 1,
+    },
+    {
+      headerName: 'Comments',
+      field: 'comments',
+      flex: 2,
+    },
+    {
+      headerName: 'Date',
+      field: 'timestamp',
+      valueFormatter: ({ value }: { value: number }) =>
+        new Date(value).toLocaleDateString(),
+      flex: 1,
+    },
+    {
+      headerName: 'Voyage ID',
+      valueGetter: (params: any) => {
+        return params.data?.changes?.[0]?.entityRef?.id || '';
+      },
+      flex: 1,
+    },
+    {
+      headerName: 'Ship Name',
+      valueGetter: (params: any) => {
+        const ship = params.data?.changes?.[0]?.changes?.find(
+          (c: any) => c.kind === 'owned' && c.property === 'Voyage_Ship',
         );
-        const data = (await res.json()).data as Contribution[];
-        setContribs(data.map((c) => c.changeSet));
-      } catch (error) {
-        console.error('Failed to load contributions:', error);
-      }
-    };
-    load();
-  }, []);
+        return (
+          ship?.changes?.find((s: any) => s.property === 'VoyageShip_ship_name')
+            ?.changed || ''
+        );
+      },
+      flex: 1,
+    },
+    {
+      headerName: 'Port of Departure',
+      valueGetter: (params: any) => {
+        const itinerary = params.data?.changes?.[0]?.changes?.find(
+          (c: any) => c.kind === 'owned' && c.property === 'Voyage_Itinerary',
+        );
+        return (
+          itinerary?.changes?.find(
+            (c: any) => c.property === 'VoyageItinerary_port_of_departure_id',
+          )?.changed?.data?.Name || ''
+        );
+      },
+      flex: 1,
+    },
+  ];
+
+  const empty = useMemo(() => {
+    if (!active) return undefined;
+    const schema = active.changes[0].entityRef.schema;
+    const id = active.changes[0].entityRef.id;
+    return materializeNew(getSchema(schema), id);
+  }, [active]);
+
+  const datasource = useMemo(
+    () => ({
+      getRows: async (params: any) => {
+        const page = Math.floor(params.startRow / rowsPerPage) + 1;
+        try {
+          const res = await fetch(
+            `${BASEURLNODE}/contributions?page=${page}&limit=${rowsPerPage}`,
+          );
+          const data = await res.json();
+          const rows = data.data.map((c: any) => c.changeSet);
+          params.successCallback(rows, data.total);
+          setTotalResultsCount(data.total);
+          console.log({ rows });
+          setContribs(rows);
+        } catch (err) {
+          console.error('Error fetching data:', err);
+          params.failCallback();
+        }
+      },
+    }),
+    [rowsPerPage],
+  );
+  const pageCount = Math.ceil(
+    totalResultsCount && rowsPerPage ? totalResultsCount / rowsPerPage : 1,
+  );
+  const handleBackToTable = () => setActive(undefined);
+
+  const handleChangePage = (_event: unknown, newPage: number) => {
+    setPage(newPage);
+    gridRef.current?.api.paginationGoToPage(newPage - 1);
+  };
+
+  const handleChangePagePagination = (_event: any, newPage: number) => {
+    setPage(newPage - 1);
+    gridRef.current?.api.paginationGoToPage(newPage - 1);
+  };
+
+  const handleChangeRowsPerPage = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      const newPageSize = parseInt(event.target.value);
+      setRowsPerPage(newPageSize);
+    },
+    [],
+  );
+
   return (
-    <>
-      {active === undefined && (
-        <div>
-          <h1>Temporary (Mocked) Editorial Platform</h1>
-          <TableContainer component={Paper}>
-            <Table aria-label="collapsible table">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Title</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {contribs.map((c, i) => (
-                  <TableRow key={i} onClick={() => setActive(c)}>
-                    <TableCell>{c.title}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </div>
+    <Box sx={{ p: 2, width: '100%' }}>
+      {active === undefined ? (
+        <>
+          <Typography variant="h4" sx={{ mb: 2 }}>
+            Editorial Contributions
+          </Typography>
+
+          <div
+            className="ag-theme-alpine"
+            style={{
+              height: 'calc(90vh - 220px)',
+              width: openSideBar
+                ? 'calc(100vw - 340px)'
+                : 'calc(100vw - 120px)',
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              overflowY: 'auto',
+            }}
+          >
+            <AgGridReact<ChangeSet>
+              ref={gridRef}
+              columnDefs={columnDefs as any}
+              defaultColDef={{ flex: 1, minWidth: 100 }}
+              rowModelType="infinite"
+              datasource={datasource}
+              cacheBlockSize={rowsPerPage}
+              paginationPageSize={rowsPerPage}
+              onRowClicked={({ data }) => setActive(data)}
+              theme="legacy"
+              pagination={true}
+              suppressPaginationPanel={true}
+            />
+          </div>
+          <div className="tableContainer">
+            <CustomTablePagination
+              component="div"
+              count={totalResultsCount}
+              page={page}
+              onPageChange={handleChangePage}
+              rowsPerPageOptions={[5, 10, 15, 20, 25, 30, 45, 50, 100]}
+              rowsPerPage={rowsPerPage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+            />
+            <div className="pagination-contribute">
+              <Pagination
+                count={pageCount}
+                page={page + 1}
+                onChange={handleChangePagePagination}
+              />
+            </div>
+          </div>
+        </>
+      ) : (
+        <Box>
+          <Box sx={{ mb: 2 }}>
+            <Button onClick={handleBackToTable} variant="outlined">
+              ← Back to Table
+            </Button>
+            <Typography variant="h5" sx={{ mt: 2 }}>
+              Contribution from {active?.author}
+            </Typography>
+          </Box>
+          <div className="contribute-content">
+            {empty && (
+              <ContributionForm
+                entity={empty}
+                changeSet={active}
+                onChange={setActive}
+                accessLevel={PropertyAccessLevel.Editor}
+              />
+            )}
+          </div>
+        </Box>
       )}
-      <div className="contribute-content">
-        <h1>Contribution from {active?.author}</h1>
-        {active !== undefined && empty !== undefined && (
-          <ContributionForm
-            entity={empty}
-            changeSet={active}
-            onChange={setActive}
-            accessLevel={PropertyAccessLevel.Editor}
-          />
-        )}
-      </div>
-    </>
+    </Box>
   );
 };
