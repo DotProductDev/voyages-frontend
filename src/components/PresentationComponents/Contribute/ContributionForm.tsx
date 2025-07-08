@@ -110,8 +110,8 @@ export const ContributionForm = ({
 
   useEffect(() => {
     contributeForm.setFieldsValue({
-      title: `Contribution for ${schema.getLabel(entity.data)}`,
-      comments: '',
+      title: changeSet.title,
+      comments: changeSet.comments,
       accessLevel: PropertyAccessLevel.AdvancedContributor,
     });
     // TODO: Thasanee: I commented out the following as now the
