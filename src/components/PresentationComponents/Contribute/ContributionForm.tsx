@@ -124,7 +124,14 @@ export const ContributionForm = ({
     //  comments: '',
     //  timestamp: new Date().getTime(),
     //});
-  }, [schema, contributeForm, entity, onChange]);
+  }, [
+    schema,
+    contributeForm,
+    entity,
+    onChange,
+    changeSet.title,
+    changeSet.comments,
+  ]);
 
   const onChangesUpdate = useCallback(
     (newChange: EntityChange) => {
