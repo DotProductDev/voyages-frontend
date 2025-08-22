@@ -1,6 +1,8 @@
 import React from 'react';
+
 import { Box, Typography, Button } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+
 import AnimatedLogo from '@/assets/sv-logo_v2_notext.svg';
 const PageNotFound404: React.FC = () => {
   const navigate = useNavigate();
@@ -27,7 +29,7 @@ const PageNotFound404: React.FC = () => {
       />
 
       <Typography variant="body1" color="text.secondary" mb={4}>
-        Sorry, we couldn't find the page you're looking for.
+        Sorry, we couldn&apos;t find the page you&apos;re looking for.
       </Typography>
 
       <Button
