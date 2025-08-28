@@ -22,7 +22,7 @@ import ContributeHomeWelcome from './ContributeHomeWelcome';
 import DownloadVoyages from './editorialPlatform/DownloadVoyages';
 import EditEnslaved from './editorialPlatform/EditEnslaved';
 import EditEnslavers from './editorialPlatform/EditEnslavers';
-import { EditorialPlatform } from './editorialPlatform/EditorialPlatform';
+import EditorialPlatform from './editorialPlatform/EditorialPlatform';
 import EditSourceCodes from './editorialPlatform/EditSourceCodes';
 import EditUser from './editorialPlatform/EditUser';
 import EditVoyages from './editorialPlatform/EditVoyages';
