@@ -22,19 +22,15 @@ import ContributeHomeWelcome from './ContributeHomeWelcome';
 import DownloadVoyages from './editorialPlatform/DownloadVoyages';
 import EditEnslaved from './editorialPlatform/EditEnslaved';
 import EditEnslavers from './editorialPlatform/EditEnslavers';
-import EditorialPlatform from './editorialPlatform/EditorialPlatform';
 import EditSourceCodes from './editorialPlatform/EditSourceCodes';
 import EditUser from './editorialPlatform/EditUser';
 import EditVoyages from './editorialPlatform/EditVoyages';
 import PublishNewDBVersion from './editorialPlatform/PublishNewDBVersion';
-// Other Components
-// Hooks and Utils
 import SignOut from './Form/SignOut';
 import TermsAndConditions from './Form/TermsAndConditions';
 import Guidelines from './Guidelines';
-
-// Styles
 import '@/style/contributeContent.scss';
+import EditorialPlatformTable from './editorialPlatform/EditorialPlatformTable';
 
 interface ContributeContentProps {
   openSideBar: boolean;
@@ -71,7 +67,9 @@ const ContributeContent: React.FC<ContributeContentProps> = ({
     legal: () => <TermsAndConditions />,
     logout: () => <SignOut />,
     password_change: () => <PasswordChangeForm />,
-    editorial_platform: () => <EditorialPlatform openSideBar={openSideBar} />,
+    editorial_platform: () => (
+      <EditorialPlatformTable openSideBar={openSideBar} />
+    ),
     interim: () => <NewVoyage />,
     edit_voyage: () => <EditExistingVoyage openSideBar={openSideBar} />,
     merge_voyages: () => <MergeVoyages />,

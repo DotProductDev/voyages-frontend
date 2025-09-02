@@ -437,5 +437,3 @@ export const ContributionForm = ({
     </>
   );
 };
-
-export default ContributionForm;
