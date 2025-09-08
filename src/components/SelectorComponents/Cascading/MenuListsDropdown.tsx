@@ -8,8 +8,26 @@ import {
 } from '@mui/material';
 import { Tooltip } from 'antd';
 import { useDispatch, useSelector } from 'react-redux';
-import { DropdownCascading } from './DropdownCascading';
+
+import AutoCompleteListBox from '@/components/FilterComponents/Autocomplete/AutoCompleteListBox';
+import FilterTextBox from '@/components/FilterComponents/Autocomplete/FilterTextBox';
+import FilterTextNameEnslaversBox from '@/components/FilterComponents/Autocomplete/FilterTextNameEnslaversBox';
+import RangeSliderComponent from '@/components/FilterComponents/RangeSlider/RangeSliderComponent';
+import { usePageRouter } from '@/hooks/usePageRouter';
+import {
+  setIsChangeAuto,
+  setTextFilterValue,
+} from '@/redux/getAutoCompleteSlice';
+import { setType, setFilterObject } from '@/redux/getFilterSlice';
+import {
+  setEnslaversNameAndRole,
+  setIsChange,
+  setKeyValueName,
+  setListEnslavers,
+  setOpsRole,
+} from '@/redux/getRangeSliderSlice';
 import { AppDispatch, RootState } from '@/redux/store';
+
 import {
   ChildrenFilter,
   FilterObjectsState,
@@ -24,58 +42,52 @@ import {
   RolesProps,
   TYPESOFDATASET,
 } from '@/share/InterfaceTypes';
+import { DropdownCascading } from './DropdownCascading';
 import '@/style/homepage.scss';
-import { setType } from '@/redux/getFilterSlice';
 import {
   DialogModalStyle,
   DropdownMenuItem,
   DropdownNestedMenuItemChildren,
   StyleDialog,
 } from '@/styleMUI';
+
 import { useState, MouseEvent, useEffect } from 'react';
+
 import { PaperDraggable } from './PaperDraggable';
-import {
-  setEnslaversNameAndRole,
-  setIsChange,
-  setKeyValueName,
-  setListEnslavers,
-  setOpsRole,
-} from '@/redux/getRangeSliderSlice';
-import {
-  setIsChangeAuto,
-  setTextFilterValue,
-} from '@/redux/getAutoCompleteSlice';
+
 import { setIsOpenDialog } from '@/redux/getScrollPageSlice';
+
 import { ArrowDropDown, ArrowRight } from '@mui/icons-material';
+
 import {
   ENSALVERSTYLE,
   INTRAAMERICANTRADS,
   TRANSATLANTICTRADS,
 } from '@/share/CONST_DATA';
+
 import GeoTreeSelected from '../../FilterComponents/GeoTreeSelect/GeoTreeSelected';
+
 import { resetAll } from '@/redux/resetAllSlice';
-import { usePageRouter } from '@/hooks/usePageRouter';
 import { checkRouteForVoyages } from '@/utils/functions/checkPagesRoute';
-import RangeSliderComponent from '@/components/FilterComponents/RangeSlider/RangeSliderComponent';
-import FilterTextBox from '@/components/FilterComponents/Autocomplete/FilterTextBox';
 import {
   getColorBTNVoyageDatasetBackground,
   getColorBackground,
   getColorBoxShadow,
   getColorHoverBackgroundCollection,
 } from '@/utils/functions/getColorStyle';
-import { setFilterObject } from '@/redux/getFilterSlice';
-import AutoCompleteListBox from '@/components/FilterComponents/Autocomplete/AutoCompleteListBox';
 import {
   setLabelVarName,
   setTextFilter,
 } from '@/redux/getShowFilterObjectSlice';
 import { setIsChangeGeoTree } from '@/redux/getGeoTreeDataSlice';
-import { SelectSearchDropdownEnslaversNameRole } from '../SelectDrowdown/SelectSearchDropdownEnslaversNameRole';
+
 import { RadioSelected } from '../RadioSelected/RadioSelected';
-import FilterTextNameEnslaversBox from '@/components/FilterComponents/Autocomplete/FilterTextNameEnslaversBox';
+import { SelectSearchDropdownEnslaversNameRole } from '../SelectDrowdown/SelectSearchDropdownEnslaversNameRole';
+
 import { updatedEnslaversRoleAndNameToLocalStorage } from '@/utils/functions/updatedEnslaversRoleAndNameToLocalStorage';
+
 import { SelectSearchDropdownList } from '../SelectDrowdown/SelectSearchDropdownList';
+
 import { updateFilterTextDialog } from '@/utils/functions/updateFilterTextDialog';
 
 export const MenuListsDropdown = () => {
@@ -89,26 +101,26 @@ export const MenuListsDropdown = () => {
     valueEnslavedTexas,
     valueEnslavers,
   } = useSelector(
-    (state: RootState) => state.getFilterMenuList.filterValueList
+    (state: RootState) => state.getFilterMenuList.filterValueList,
   );
   const { type: typeData } = useSelector((state: RootState) => state.getFilter);
   const { languageValue } = useSelector(
-    (state: RootState) => state.getLanguages
+    (state: RootState) => state.getLanguages,
   );
   const { styleName: styleNameRoute } = usePageRouter();
   const { currentPage } = useSelector(
-    (state: RootState) => state.getScrollPage as CurrentPageInitialState
+    (state: RootState) => state.getScrollPage as CurrentPageInitialState,
   );
 
   const { isOpenDialog } = useSelector(
-    (state: RootState) => state.getScrollPage as CurrentPageInitialState
+    (state: RootState) => state.getScrollPage as CurrentPageInitialState,
   );
   const { labelVarName, textFilter } = useSelector(
-    (state: RootState) => state.getShowFilterObject
+    (state: RootState) => state.getShowFilterObject,
   );
 
   const { listEnslavers, varName, enslaverName, opsRoles } = useSelector(
-    (state: RootState) => state.rangeSlider as FilterObjectsState
+    (state: RootState) => state.rangeSlider as FilterObjectsState,
   );
 
   const [isClickMenu, setIsClickMenu] = useState<boolean>(false);
@@ -181,7 +193,7 @@ export const MenuListsDropdown = () => {
   const handleClickMenu = (
     event: MouseEvent<HTMLLIElement> | MouseEvent<HTMLDivElement>,
     ops: string[],
-    roles?: RolesProps[]
+    roles?: RolesProps[],
   ) => {
     const { value, type, label } = event.currentTarget.dataset;
     event.stopPropagation();
@@ -264,7 +276,7 @@ export const MenuListsDropdown = () => {
   const handleApplyEnslaversDialog = (
     roles: RolesProps[],
     name: string,
-    ops: string
+    ops: string,
   ) => {
     if (roles.length === 0) {
       setTextRoleListError('*Select the role(s) for this enslaver');
@@ -279,7 +291,7 @@ export const MenuListsDropdown = () => {
       newRoles as string[],
       name,
       varName,
-      ops!
+      ops!,
     );
   };
 
@@ -292,12 +304,12 @@ export const MenuListsDropdown = () => {
       varName,
       ops,
       opsRoles!,
-      labelVarName
+      labelVarName,
     );
   };
 
   const renderDropdownMenu = (
-    nodes: FilterMenu | ChildrenFilter | (FilterMenu | ChildrenFilter)[]
+    nodes: FilterMenu | ChildrenFilter | (FilterMenu | ChildrenFilter)[],
   ): React.ReactElement<any>[] | undefined => {
     if (Array.isArray(nodes!)) {
       return nodes.map((node: FilterMenu | ChildrenFilter, index: number) => {
@@ -488,8 +500,8 @@ export const MenuListsDropdown = () => {
         onClick={(e) => e.stopPropagation()}
         slotProps={{
           backdrop: {
-            onClick: (e) => e.stopPropagation()
-          }
+            onClick: (e) => e.stopPropagation(),
+          },
         }}
         BackdropProps={{
           style: DialogModalStyle,
@@ -531,7 +543,7 @@ export const MenuListsDropdown = () => {
                     handleApplyEnslaversDialog(
                       listEnslavers,
                       enslaverName,
-                      opsRoles!
+                      opsRoles!,
                     );
                   } else {
                     handleApplyTextFilterDataDialog(textFilter);
@@ -548,7 +560,7 @@ export const MenuListsDropdown = () => {
                   fontSize: '0.80rem',
                   '&:hover': {
                     backgroundColor: getColorHoverBackgroundCollection(
-                      styleNameRoute!
+                      styleNameRoute!,
                     ),
                     color: getColorBTNVoyageDatasetBackground(styleNameRoute!),
                   },
@@ -575,7 +587,7 @@ export const MenuListsDropdown = () => {
               fontSize: '0.80rem',
               '&:hover': {
                 backgroundColor: getColorHoverBackgroundCollection(
-                  styleNameRoute!
+                  styleNameRoute!,
                 ),
                 color: getColorBTNVoyageDatasetBackground(styleNameRoute!),
               },
