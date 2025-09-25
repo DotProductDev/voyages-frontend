@@ -49,7 +49,7 @@ const EditExistingVoyage: React.FC<EditExistingVoyageProps> = ({
       if (res.status === 200) {
         setEntity(res.data);
         setChangeSet({
-          id: -1,
+          id: '-1',
           author: 'Mocked',
           title: `Mocked edit voyage ${voyageId}`,
           changes: [],

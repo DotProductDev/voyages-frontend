@@ -8,7 +8,6 @@ import EditExistingVoyage from '@/components/PresentationComponents/Contribute/F
 import MergeVoyages from '@/components/PresentationComponents/Contribute/Form/MergeVoyages';
 import NewVoyage from '@/components/PresentationComponents/Contribute/Form/NewVoyage';
 import PasswordChangeForm from '@/components/PresentationComponents/Contribute/Form/PasswordChangeForm';
-import PasswordReset from '@/components/PresentationComponents/Contribute/Form/PasswordRestForm';
 import RecommendVoyageDeletion from '@/components/PresentationComponents/Contribute/Form/RecommendVoyageDeletion';
 import SignUpForm from '@/components/PresentationComponents/Contribute/Form/SignUpForm';
 import SignInForm from '@/components/PresentationComponents/Contribute/Form/SingInForm';
@@ -22,15 +21,16 @@ import ContributeHomeWelcome from './ContributeHomeWelcome';
 import DownloadVoyages from './editorialPlatform/DownloadVoyages';
 import EditEnslaved from './editorialPlatform/EditEnslaved';
 import EditEnslavers from './editorialPlatform/EditEnslavers';
+import EditorialPlatformTable from './editorialPlatform/EditorialPlatformTable';
 import EditSourceCodes from './editorialPlatform/EditSourceCodes';
 import EditUser from './editorialPlatform/EditUser';
 import EditVoyages from './editorialPlatform/EditVoyages';
 import PublishNewDBVersion from './editorialPlatform/PublishNewDBVersion';
+import PasswordResetForm from './Form/PasswordResetForm';
 import SignOut from './Form/SignOut';
 import TermsAndConditions from './Form/TermsAndConditions';
 import Guidelines from './Guidelines';
 import '@/style/contributeContent.scss';
-import EditorialPlatformTable from './editorialPlatform/EditorialPlatformTable';
 
 interface ContributeContentProps {
   openSideBar: boolean;
@@ -62,7 +62,7 @@ const ContributeContent: React.FC<ContributeContentProps> = ({
     signup: () => <SignUpForm />,
     guidelines: () => <Guidelines />,
     password: () => (
-      <PasswordReset handleResetPassword={handleResetPasswordClick} />
+      <PasswordResetForm handleResetPassword={handleResetPasswordClick} />
     ),
     legal: () => <TermsAndConditions />,
     logout: () => <SignOut />,

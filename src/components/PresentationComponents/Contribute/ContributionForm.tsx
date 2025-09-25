@@ -28,6 +28,7 @@ import {
 } from 'antd';
 import { useSelector } from 'react-redux';
 
+import { usePageRouter } from '@/hooks/usePageRouter';
 import { RootState } from '@/redux/store';
 import { translationLanguagesContribute } from '@/utils/functions/translationLanguages';
 
@@ -85,6 +86,7 @@ export const ContributionForm = ({
   onChange,
   accessLevel: initAccessLevel,
 }: ContributionFormProps) => {
+  const { contributePath } = usePageRouter();
   const [contributeForm] = Form.useForm();
   const schema = getSchema(entity.entityRef.schema);
   const [accessLevel, setAccessLevel] = useState<PropertyAccessLevel>(
@@ -100,9 +102,15 @@ export const ContributionForm = ({
   const [previewEntity, setPreviewEntity] = useState<
     MaterializedEntity | undefined
   >(undefined);
+  const isNewVoyages = contributePath === 'interim';
 
   const accessLevelOptions = Object.entries(PropertyAccessLevel)
-    .filter(([key]) => isNaN(Number(key)) && key !== 'Hidden')
+    .filter(
+      ([key]) =>
+        isNaN(Number(key)) &&
+        key !== 'Hidden' &&
+        !(isNewVoyages && key === 'Editor'),
+    )
     .map(([label, value]) => ({
       label: label.replace(/([A-Z])/g, ' $1').trim(),
       value,

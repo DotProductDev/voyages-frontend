@@ -1,17 +1,14 @@
 import React from 'react';
 
 import { Box, TextField, Button, Typography, Alert } from '@mui/material';
+import { usePasswordResetForm, PasswordResetFormData } from '@/hooks/usePasswordResetForm';
 
-import {
-  usePasswordChangeForm,
-  PasswordChangeFormData,
-} from '@/hooks/usePasswordChangeForm';
-
-interface PasswordChangeFormProps {
-  onSubmit?: (data: PasswordChangeFormData) => Promise<void> | void;
+interface PasswordResetProp {
+  handleResetPassword?: () => void;
+  onSubmit?: (data: PasswordResetFormData) => Promise<void> | void;
 }
 
-const PasswordChangeForm: React.FC<PasswordChangeFormProps> = ({
+const PasswordResetForm: React.FC<PasswordResetProp> = ({
   onSubmit,
 }) => {
   const {
@@ -21,21 +18,26 @@ const PasswordChangeForm: React.FC<PasswordChangeFormProps> = ({
     isSuccess,
     handleInputChange,
     handleSubmit,
-  } = usePasswordChangeForm();
+  } = usePasswordResetForm();
 
   return (
     <Box
       sx={{
+        margin: '0 auto',
         padding: '2rem',
         textAlign: 'left',
       }}
     >
       <Typography variant="h4" gutterBottom>
-        Set Password
+        Password Reset
+      </Typography>
+      <Typography variant="body1" sx={{ mb: 2 }}>
+        Forgotten your password? Enter your e-mail address below, and we'll send
+        you an e-mail allowing you to reset it.
       </Typography>
       {isSuccess && (
         <Alert severity="success" sx={{ mb: 2 }}>
-          Password has been successfully changed!
+          Password reset email has been sent to your email address.
         </Alert>
       )}
       {errors.general && (
@@ -55,36 +57,14 @@ const PasswordChangeForm: React.FC<PasswordChangeFormProps> = ({
                 },
               },
             }}
-            label="Password"
+            label="E-mail address"
             variant="outlined"
-            type="password"
-            name="password"
-            value={formData.password}
+            type="email"
+            name="email"
+            value={formData.email}
             onChange={handleInputChange}
-            error={!!errors.password}
-            helperText={errors.password}
-            required
-          />
-        </Box>
-        <Box sx={{ mb: 3 }}>
-          <TextField
-            sx={{ width: 300 }}
-            slotProps={{
-              input: {
-                sx: {
-                  height: 42,
-                  padding: '0 8px',
-                },
-              },
-            }}
-            label="Password (again)"
-            variant="outlined"
-            type="password"
-            name="passwordAgain"
-            value={formData.passwordAgain}
-            onChange={handleInputChange}
-            error={!!errors.passwordAgain}
-            helperText={errors.passwordAgain}
+            error={!!errors.email}
+            helperText={errors.email}
             required
           />
         </Box>
@@ -94,21 +74,24 @@ const PasswordChangeForm: React.FC<PasswordChangeFormProps> = ({
           color="primary"
           disabled={isSubmitting}
           sx={{
-            backgroundColor: 'rgb(55, 148, 141)',
+            backgroundColor: 'rgb(25, 118, 210 ,10)',
             color: '#fff',
             height: 32,
             fontSize: '0.85rem',
             textTransform: 'none',
             '&:hover': {
-              backgroundColor: 'rgba(6, 186, 171, 0.83)',
+              backgroundColor: 'rgb(10 131 253)',
             },
           }}
         >
-          {isSubmitting ? 'Changing...' : 'Reset Password'}
+          {isSubmitting ? 'Sending...' : 'Reset My Password'}
         </Button>
       </form>
+      <Typography variant="body1" sx={{ mt: 2 }}>
+        Please contact us if you have any trouble resetting your password.
+      </Typography>
     </Box>
   );
 };
 
-export default PasswordChangeForm;
+export default PasswordResetForm;
