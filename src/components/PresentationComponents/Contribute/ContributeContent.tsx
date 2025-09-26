@@ -67,15 +67,16 @@ const ContributeContent: React.FC<ContributeContentProps> = ({
     legal: () => <TermsAndConditions />,
     logout: () => <SignOut />,
     password_change: () => <PasswordChangeForm />,
-    editorial_platform: () => (
-      <EditorialPlatformTable openSideBar={openSideBar} />
-    ),
+
     interim: () => <NewVoyage />,
     edit_voyage: () => <EditExistingVoyage openSideBar={openSideBar} />,
     merge_voyages: () => <MergeVoyages />,
     delete_voyage: () => <RecommendVoyageDeletion />,
 
     // Editorial platform routes
+    'editor_main/requests': () => (
+      <EditorialPlatformTable openSideBar={openSideBar} />
+    ),
     'editor_main/pending': () => <EditVoyages />,
     'editor_main/enslavers_contrib': () => <EditEnslavers />,
     'editor_main/enslaved_contrib': () => <EditEnslaved />,
