@@ -15,6 +15,7 @@ import { fetchSubmitEditVoaygesForm } from '@/fetch/contributeFetch/fetchSubmitE
 import {
   ContributionForm,
   ContributionSectionStyle,
+  ReviewMode,
 } from '../ContributionForm';
 
 const initialExistingVoyageEntity: MaterializedEntity = {
@@ -167,6 +168,7 @@ const EditExistingVoyage: React.FC<EditExistingVoyageProps> = ({
           entity={entity}
           changeSet={changeSet}
           onChange={setChangeSet}
+          mode={ReviewMode.Edit}
         />
       )}
     </div>

@@ -32,6 +32,7 @@ export interface LinkedEntityPropertyComponentProps {
   entity: MaterializedEntity;
   lastChange?: LinkedEntitySelectionChange;
   onChange: EntityFormProps['onChange'];
+  readOnly?: boolean;
 }
 
 const LinkedLocationComponent = (
@@ -58,7 +59,7 @@ const LinkedLocationComponent = (
 export const LinkedEntityPropertyComponent = (
   props: LinkedEntityPropertyComponentProps & EntityFormProps,
 ) => {
-  const { property, entity, lastChange, onChange } = props;
+  const { property, entity, lastChange, onChange, readOnly = false } = props;
   const [comments, setComments] = useState<string | undefined>();
   const { uid, mode, label, linkedEntitySchema } = property;
   const value = lastChange
@@ -204,11 +205,12 @@ export const LinkedEntityPropertyComponent = (
       <Select
         className={`truncate-select ${lastChange ? 'changedEntityProperty' : ''}`}
         value={value?.entityRef.id}
-        placeholder={`Select ${lowerCaseFirstLetter(label)}`}
+        placeholder={readOnly ? '' : `Select ${lowerCaseFirstLetter(label)}`}
         style={{ width: 'calc(100% - 20px)' }}
         options={styledOptions}
-        onChange={handleChange}
-        showSearch
+        onChange={readOnly ? undefined : handleChange}
+        showSearch={!readOnly}
+        disabled={readOnly}
         styles={{
           popup: {
             root: {
@@ -219,7 +221,7 @@ export const LinkedEntityPropertyComponent = (
           },
         }}
         optionLabelProp="label"
-        filterOption={(input: string, option: any) =>
+        filterOption={readOnly ? undefined : (input: string, option: any) =>
           (option?.searchText ?? '').toLowerCase().includes(input.toLowerCase())
         }
       />
@@ -229,13 +231,14 @@ export const LinkedEntityPropertyComponent = (
   return (
     <>
       {displaySelected}
-      {mode === EntityLinkEditMode.Create && (
+      {mode === EntityLinkEditMode.Create && !readOnly && (
         <LinkedEntityAddNewDialogComponent {...props} comments={comments} />
       )}
       <EntityPropertyChangeCommentBox
         property={property}
         current={lastChange?.comments}
-        onComment={setComments}
+        onComment={readOnly ? () => {} : setComments}
+        readOnly={readOnly}
       />
     </>
   );

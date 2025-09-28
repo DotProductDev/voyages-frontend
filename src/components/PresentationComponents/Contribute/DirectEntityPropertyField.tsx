@@ -22,6 +22,7 @@ export interface DirectEntityPropertyFieldProps {
   entity: MaterializedEntity;
   lastChange?: DirectPropertyChange;
   onChange: EntityFormProps['onChange'];
+  readOnly?: boolean;
 }
 
 export const lowerCaseFirstLetter = (s: string) =>
@@ -38,6 +39,7 @@ export const DirectEntityPropertyField = ({
   entity,
   lastChange,
   onChange,
+  readOnly = false,
 }: DirectEntityPropertyFieldProps) => {
   const { kind, label } = property;
   const [comments, internalSetComments] = useState<string | undefined>();
@@ -112,30 +114,34 @@ export const DirectEntityPropertyField = ({
       {kind === 'bool' ? (
         <Checkbox
           value={value}
-          onChange={(e) => handleChange(e.target.checked)}
+          onChange={readOnly ? undefined : (e) => handleChange(e.target.checked)}
+          disabled={readOnly}
         />
       ) : htmlProps.includes(property) ? (
         <ReactQuill
           style={{ width: 'calc(100% - 20px)' }}
           value={String(value ?? '')}
-          onChange={(v) => handleInputChange(v)}
+          onChange={readOnly ? undefined : (v) => handleInputChange(v)}
+          readOnly={readOnly}
         />
       ) : (
         <>
           <Input
             className={`truncate-input ${lastChange ? 'changedEntityProperty' : ''}`}
             type={kind}
-            placeholder={`Enter ${lowerCaseFirstLetter(label)}`}
+            placeholder={readOnly ? '' : `Enter ${lowerCaseFirstLetter(label)}`}
             style={{ width: 'calc(100% - 20px)' }}
             value={value === null ? '' : value + ''}
-            onChange={(e) => handleInputChange(e.target.value)}
+            onChange={readOnly ? undefined : (e) => handleInputChange(e.target.value)}
+            readOnly={readOnly}
           />
         </>
       )}
       <EntityPropertyChangeCommentBox
         property={property}
         current={lastChange?.comments}
-        onComment={setComments}
+        onComment={readOnly ? () => {} : setComments}
+        readOnly={readOnly}
       />
     </>
   );

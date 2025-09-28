@@ -29,6 +29,9 @@ interface ChangesSummaryProps {
   handlePreview: () => void;
   handleSaveChanges: () => void;
   handleDeleteChange: (propertyToDelete: string) => void;
+  isReviewMode?: boolean;
+  onCommitReview?: () => void;
+  readOnly?: boolean;
 }
 
 const ChangesSummary = ({
@@ -38,6 +41,9 @@ const ChangesSummary = ({
   submitChanges,
   handleSaveChanges,
   handleDeleteChange,
+  isReviewMode = false,
+  onCommitReview,
+  readOnly = false,
 }: ChangesSummaryProps) => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -88,32 +94,38 @@ const ChangesSummary = ({
         >
           Preview
         </Button>
-        <Button
-          color="primary"
-          variant="outlined"
-          icon={<SaveOutlined />}
-          onClick={handleSaveChanges}
-          disabled={changes.length === 0}
-        >
-          Save Changes
-        </Button>
-        <Button
-          icon={<ReloadOutlined />}
-          danger
-          onClick={resetAllChanges}
-          disabled={changes.length === 0}
-        >
-          Reset All
-        </Button>
-        <Button
-          style={{ width: 150 }}
-          type="primary"
-          onClick={submitChanges}
-          block
-          disabled={submitChanges === undefined}
-        >
-          Submit Changes
-        </Button>
+        {!readOnly && (
+          <>
+            <Button
+              color="primary"
+              variant="outlined"
+              icon={<SaveOutlined />}
+              onClick={isReviewMode && onCommitReview ? onCommitReview : handleSaveChanges}
+              disabled={changes.length === 0}
+            >
+              {isReviewMode ? 'Commit Review' : 'Save Changes'}
+            </Button>
+            <Button
+              icon={<ReloadOutlined />}
+              danger
+              onClick={resetAllChanges}
+              disabled={changes.length === 0}
+            >
+              {isReviewMode ? 'Abandon Review' : 'Reset All'}
+            </Button>
+            {!isReviewMode && (
+              <Button
+                style={{ width: 150 }}
+                type="primary"
+                onClick={submitChanges}
+                block
+                disabled={submitChanges === undefined}
+              >
+                Submit Changes
+              </Button>
+            )}
+          </>
+        )}
       </Space.Compact>
     </div>
   );

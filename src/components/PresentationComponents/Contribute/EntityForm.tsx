@@ -31,6 +31,7 @@ export interface EntityFormProps {
   setExpandedMenu: React.Dispatch<React.SetStateAction<string[]>>;
   accessLevel: PropertyAccessLevel;
   onSectionsChange?: (sections: CollapseProps['items']) => void;
+  readOnly?: boolean;
 }
 
 export const EntityForm = ({
@@ -42,6 +43,7 @@ export const EntityForm = ({
   setExpandedMenu,
   accessLevel,
   onSectionsChange,
+  readOnly = false,
 }: EntityFormProps) => {
   const properties = useMemo(
     () =>
@@ -66,6 +68,7 @@ export const EntityForm = ({
               changes={changes}
               onChange={onChange}
               accessLevel={accessLevel}
+              readOnly={readOnly}
             />
           </>
         );

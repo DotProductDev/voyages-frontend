@@ -12,7 +12,7 @@ import {
 import { Box, Button } from '@mui/material';
 import { Divider, Form, Input, message } from 'antd';
 
-import { ContributionForm } from '../ContributionForm';
+import { ContributionForm, ReviewMode } from '../ContributionForm';
 
 export interface EntityFormProps {
   schema: EntitySchema;
@@ -118,6 +118,7 @@ const NewVoyage: React.FC = ({ entity = tempNewVoyage }: NewVoyageProps) => {
         entity={entity}
         changeSet={changeSet}
         onChange={setChangeSet}
+        mode={ReviewMode.Create}
       />
       <Divider style={{ margin: '12px 0' }} />
       <Form layout="vertical" form={form}>
