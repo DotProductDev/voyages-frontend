@@ -100,7 +100,11 @@ const ChangesSummary = ({
               color="primary"
               variant="outlined"
               icon={<SaveOutlined />}
-              onClick={isReviewMode && onCommitReview ? onCommitReview : handleSaveChanges}
+              onClick={
+                isReviewMode && onCommitReview
+                  ? onCommitReview
+                  : handleSaveChanges
+              }
               disabled={changes.length === 0}
             >
               {isReviewMode ? 'Commit Review' : 'Save Changes'}

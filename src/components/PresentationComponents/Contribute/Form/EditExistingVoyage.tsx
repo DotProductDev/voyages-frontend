@@ -165,6 +165,7 @@ const EditExistingVoyage: React.FC<EditExistingVoyageProps> = ({
       </div>
       {hasEntity && changeSet && (
         <ContributionForm
+          title="Edit an Existing Record of a Voyage"
           entity={entity}
           changeSet={changeSet}
           onChange={setChangeSet}
