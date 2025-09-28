@@ -40,13 +40,11 @@ import {
 } from 'antd';
 import { useSelector } from 'react-redux';
 
-import { updateContributionStatus } from '@/fetch/contributeFetch/updateContributionStatus';
 import { usePageRouter } from '@/hooks/usePageRouter';
 import { RootState } from '@/redux/store';
 import { translationLanguagesContribute } from '@/utils/functions/translationLanguages';
 
 import ChangesSummary from './ChangesSummary';
-import { statusConfig } from './commons/StatusCellRenderer';
 import ContributionEditDecision from './ContributionEditDecision';
 import { EntityForm } from './EntityForm';
 import PreviewChangeDialog from './PreviewChange/PreviewChangeDialog';
@@ -236,7 +234,7 @@ export const ContributionForm = ({
     if (onStartReview) {
       onStartReview();
     }
-  }, [onChange, onStartReview, reviews.length]);
+  }, [changeSet, onChange, onStartReview, reviews.length]);
 
   const handleCommitReview = () => {
     if (!currentReview) return;
@@ -320,7 +318,7 @@ export const ContributionForm = ({
       const combined = combineEntityChanges(next);
       onChange({ ...currentChangeSet, changes: combined });
     },
-    [onChange],
+    [changeSet, onChange],
   );
 
   const handlePreviewChanges = () => {
@@ -378,7 +376,7 @@ export const ContributionForm = ({
         }
       },
     });
-  }, [onChange, contributeForm, isReviewMode, handleAbandonReview]);
+  }, [isReviewMode, handleAbandonReview, changeSet, onChange, contributeForm]);
 
   const toggleExpandAll = () => {
     const allKeys = sections?.map((section) => section.key as string) ?? [];
