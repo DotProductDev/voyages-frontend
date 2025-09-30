@@ -259,11 +259,17 @@ export const ContributionForm = ({
       stackOrder: reviews.length + 1,
     });
 
-    // if (onStartReview) {
-    //   onStartReview();
-    // }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [changeSet, entity.entityRef.schema, entity.entityRef.id, onChange, onStartReview, reviews.length]);
+    if (onStartReview) {
+      onStartReview();
+    }
+  }, [
+    changeSet,
+    entity.entityRef.schema,
+    entity.entityRef.id,
+    onChange,
+    onStartReview,
+    reviews.length,
+  ]);
 
   const handleCommitReview = () => {
     if (!currentReview) return;
