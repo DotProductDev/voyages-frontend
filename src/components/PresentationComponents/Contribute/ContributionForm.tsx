@@ -58,6 +58,7 @@ export enum ReviewMode {
   ReadOnly = 'read-only',
   Review = 'review',
 }
+
 export const ContributionSectionStyle: CSSProperties = {
   height: 'calc(100vh - 160px)',
   scrollSnapAlign: 'start',
@@ -143,28 +144,32 @@ export const ContributionForm = ({
   const [previewEntity, setPreviewEntity] = useState<
     MaterializedEntity | undefined
   >(undefined);
-  const [isReviewMode, setIsReviewMode] = useState(mode === ReviewMode.Review);
-  const [currentReview, setCurrentReview] = useState<Review | null>(null);
+
   const [decisionComments, setDecisionComments] = useState('');
   const [selectedDecision, setSelectedDecision] = useState<
     'accept' | 'reject' | null
   >(null);
+
+  // Track review mode and changes
+  const [isReviewMode, setIsReviewMode] = useState(mode === ReviewMode.Review);
+  const [currentReview, setCurrentReview] = useState<Review | null>(null);
   const [originalChanges, setOriginalChanges] = useState<EntityChange[]>([]);
-  const [originalEntityRef, setOriginalEntityRef] = useState<{
-    schema: string;
-    id: string | number;
-  } | null>(null);
+  const [reviewChanges, setReviewChanges] = useState<EntityChange[]>([]);
+  const [preReviewState, setPreReviewState] = useState<ChangeSet | null>(null);
+
+  useEffect(() => {
+    setIsReviewMode(mode === ReviewMode.Review);
+  }, [mode]);
+
   const isNewVoyages = contributePath === 'interim';
   const isReadOnlyMode = mode === ReviewMode.ReadOnly && !isReviewMode;
 
-  // Compute the entity with all stacked changes applied
   const stackedEntity = useMemo(() => {
-    if (!contributionId || reviews.length === 0) {
+    if (!contributionId) {
       return entity;
     }
 
     try {
-      // Create a mock contribution with all reviews
       const mockContribution: Contribution = {
         id: contributionId,
         root: entity.entityRef,
@@ -174,25 +179,44 @@ export const ContributionForm = ({
         media: [],
       };
 
-      // Get the combined changeset from the library
       const combinedChangeSet = combineContributionChanges(mockContribution);
-
-      // Convert the combined changeset back to EntityChange format
       const allChanges: EntityChange[] = [
         ...combinedChangeSet.deletions,
         ...combinedChangeSet.updates,
       ];
 
-      // Apply all changes to create the stacked entity
       const stackedEntityClone = cloneEntity(entity);
-      applyChanges(expandMaterialized(stackedEntityClone), allChanges);
+      const expandedEntity = expandMaterialized(stackedEntityClone, allChanges);
+
+      if (originalChanges.length > 0) {
+        applyChanges(expandedEntity, originalChanges);
+      }
+
+      reviews.forEach((review) => {
+        if (review.changeSet.changes && review.changeSet.changes.length > 0) {
+          applyChanges(expandedEntity, review.changeSet.changes);
+        }
+      });
+
+      if (isReviewMode && reviewChanges.length > 0) {
+        applyChanges(expandedEntity, reviewChanges);
+      }
 
       return stackedEntityClone;
     } catch (error) {
       console.error('Error computing stacked entity:', error);
       return entity;
     }
-  }, [contributionId, reviews, entity, changeSet, currentStatus]);
+  }, [
+    changeSet,
+    currentStatus,
+    contributionId,
+    entity,
+    originalChanges,
+    reviews,
+    isReviewMode,
+    reviewChanges,
+  ]);
 
   const accessLevelOptions = Object.entries(PropertyAccessLevel)
     .filter(
@@ -206,6 +230,13 @@ export const ContributionForm = ({
       value,
     }));
 
+  // Initialize original changes when component mounts
+  useEffect(() => {
+    if (changeSet.changes && changeSet.changes.length > 0) {
+      setOriginalChanges(changeSet.changes);
+    }
+  }, [changeSet.changes]);
+
   useEffect(() => {
     contributeForm.setFieldsValue({
       title: changeSet.title,
@@ -214,77 +245,81 @@ export const ContributionForm = ({
     });
   }, [changeSet.title, changeSet.comments, contributeForm]);
 
-  // Removed handleEditorialDecision - using new decision panel instead
-
   const handleStartReview = useCallback(() => {
-    setIsReviewMode(true);
+    console.log('Starting review mode');
 
-    // Store the original changes and entity reference before clearing them
-    const currentChangeSet = changeSet;
-    console.log({ currentChangeSet });
-    setOriginalChanges(currentChangeSet.changes);
+    // Save the current state as the baseline (before review)
+    setPreReviewState({ ...changeSet });
 
-    // Store the entity reference so we can recreate the empty entity later
-    if (currentChangeSet.changes && currentChangeSet.changes.length > 0) {
-      const firstChange = currentChangeSet.changes[0];
-      setOriginalEntityRef({
-        schema: firstChange.entityRef.schema,
-        id: firstChange.entityRef.id,
-      });
-    } else {
-      // Fall back to using the entity prop
-      setOriginalEntityRef({
-        schema: entity.entityRef.schema,
-        id: entity.entityRef.id,
-      });
+    // Store the original changes
+    if (originalChanges.length === 0 && changeSet.changes.length > 0) {
+      setOriginalChanges(changeSet.changes);
     }
 
-    // Create a new empty changeset for the review
-    // The original changes are now stored in originalChanges state and
-    // will be accessible through the stackedEntity calculation
-    onChange({
-      ...currentChangeSet,
-      changes: [], // Start with empty changes for the review
-    });
+    // Switch to review mode
+    setIsReviewMode(true);
 
-    setCurrentReview({
+    // Clear review changes to start fresh
+    setReviewChanges([]);
+
+    // Create a new review object
+    const newReview: Review = {
       changeSet: {
         id: `review-${Date.now()}`,
         author: 'Editor', // TODO: Get from current user
-        title: `Review for ${currentChangeSet.title}`,
+        title: `Review for ${changeSet.title}`,
         comments: '',
         timestamp: Date.now(),
         changes: [],
       },
       stackOrder: reviews.length + 1,
+    };
+    setCurrentReview(newReview);
+
+    // Clear the current changeSet to start with empty review changes
+    onChange({
+      ...changeSet,
+      changes: [],
     });
 
     if (onStartReview) {
       onStartReview();
     }
+
+    message.info('Review mode activated. Your changes will be stacked on top.');
   }, [
     changeSet,
-    entity.entityRef.schema,
-    entity.entityRef.id,
+    originalChanges.length,
+    reviews.length,
     onChange,
     onStartReview,
-    reviews.length,
   ]);
 
-  const handleCommitReview = () => {
+  const handleCommitReview = useCallback(() => {
     if (!currentReview) return;
 
     Modal.confirm({
-      title: 'Commit Review',
-      content:
-        'Are you sure you want to commit this review? This will add your changes as a new changeset.',
-      okText: 'Commit Review',
+      title: 'Submit Review',
+      content: (
+        <div>
+          <p>Are you sure you want to submit this review?</p>
+          <p>
+            This will save your {reviewChanges.length} change(s) permanently.
+          </p>
+        </div>
+      ),
+      okText: 'Submit Review',
+      cancelText: 'Cancel',
       onOk: () => {
-        const reviewWithChanges = {
+        const reviewWithChanges: Review = {
           ...currentReview,
           changeSet: {
             ...currentReview.changeSet,
-            changes: changeSet.changes,
+            changes: reviewChanges,
+            comments:
+              contributeForm.getFieldValue('comments') ||
+              currentReview.changeSet.comments,
+            timestamp: Date.now(),
           },
         };
 
@@ -292,37 +327,71 @@ export const ContributionForm = ({
           onCommitReview(reviewWithChanges);
         }
 
+        // Merge review changes into the main changeSet
+        const updatedChanges = [...originalChanges, ...reviewChanges];
+        onChange({
+          ...changeSet,
+          changes: updatedChanges,
+        });
+
+        // Exit review mode
         setIsReviewMode(false);
         setCurrentReview(null);
-        message.success('Review committed successfully');
+        setReviewChanges([]);
+        setPreReviewState(null);
+
+        message.success('Review submitted successfully');
       },
     });
-  };
+  }, [
+    currentReview,
+    reviewChanges,
+    contributeForm,
+    onCommitReview,
+    changeSet,
+    originalChanges,
+    onChange,
+  ]);
 
-  const handleAbandonReview = useCallback(() => {
+  const handleCancelReview = useCallback(() => {
     Modal.confirm({
-      title: 'Abandon Review',
+      title: 'Cancel Review',
       content:
-        'Are you sure you want to abandon this review? All unsaved changes will be lost.',
-      okText: 'Abandon Review',
+        'Are you sure you want to cancel this review? All changes will be discarded.',
+      okText: 'Cancel Review',
+      cancelText: 'Continue Editing',
       okButtonProps: { danger: true },
       onOk: () => {
+        console.log('Review abandoned - reverting changes');
+
+        // Revert to the pre-review state
+        if (preReviewState) {
+          onChange(preReviewState);
+        } else if (originalChanges.length > 0) {
+          // Fallback: restore original changes
+          onChange({
+            ...changeSet,
+            changes: originalChanges,
+          });
+        }
+
+        // Exit review mode
         setIsReviewMode(false);
         setCurrentReview(null);
-        // Use current changeSet without adding it to dependencies
-        const currentChangeSet = changeSet;
-        onChange({ ...currentChangeSet, changes: [] }); // Reset changes
+        setReviewChanges([]);
+        setPreReviewState(null);
+
+        // Call parent handler to update mode in parent component
         if (onAbandonReview) {
           onAbandonReview();
         }
-        message.info('Review abandoned');
+
+        message.info('Review cancelled - changes discarded');
       },
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onChange, onAbandonReview]);
+  }, [preReviewState, originalChanges, changeSet, onChange, onAbandonReview]);
 
-  const handleEditorialDecisionSubmit = () => {
-    console.log({ selectedDecision, decisionComments });
+  const handleEditorialDecisionSubmit = useCallback(() => {
     if (!selectedDecision || !onEditorialDecision) return;
 
     Modal.confirm({
@@ -342,32 +411,54 @@ export const ContributionForm = ({
         setDecisionComments('');
       },
     });
-  };
+  }, [selectedDecision, decisionComments, onEditorialDecision]);
 
   const onChangesUpdate = useCallback(
     (newChange: EntityChange) => {
-      // Use a ref to avoid dependency on changeSet
-      const currentChangeSet = changeSet;
-      const next = addToChangeSet(currentChangeSet.changes, newChange);
-      dropOrphans(next);
-      const combined = combineEntityChanges(next);
-      onChange({ ...currentChangeSet, changes: combined });
+      if (isReviewMode) {
+        // In review mode, update the review changes separately
+        const nextReviewChanges = addToChangeSet(reviewChanges, newChange);
+        dropOrphans(nextReviewChanges);
+        const combined = combineEntityChanges(nextReviewChanges);
+        setReviewChanges(combined);
+
+        // Update the changeSet for display
+        onChange({
+          ...changeSet,
+          changes: combined,
+        });
+      } else {
+        // Normal mode - update changes as before
+        const next = addToChangeSet(changeSet.changes, newChange);
+        dropOrphans(next);
+        const combined = combineEntityChanges(next);
+        onChange({ ...changeSet, changes: combined });
+      }
     },
-    [changeSet, onChange],
+    [isReviewMode, reviewChanges, changeSet, onChange],
   );
 
-  const handlePreviewChanges = () => {
+  const handlePreviewChanges = useCallback(() => {
     const formValues = contributeForm.getFieldsValue();
     console.log('Form Values:', formValues);
     console.log('ChangeSet:', changeSet);
-    const combined = combineChanges(changeSet.changes);
+
+    const changesToApply = isReviewMode ? reviewChanges : changeSet.changes;
+    const combined = combineChanges(changesToApply);
     console.log('Flattened change set:', combined);
 
-    const updated = cloneEntity(entity);
-    applyChanges(expandMaterialized(updated), changeSet.changes);
+    const updated = cloneEntity(isReviewMode ? stackedEntity : entity);
+    applyChanges(expandMaterialized(updated), changesToApply);
     setPreviewEntity(updated);
     console.log('Entity after applying changes:', updated);
-  };
+  }, [
+    contributeForm,
+    changeSet,
+    isReviewMode,
+    reviewChanges,
+    stackedEntity,
+    entity,
+  ]);
 
   const submitChanges = async () => {
     try {
@@ -378,40 +469,40 @@ export const ContributionForm = ({
         comments: formValues.comments,
         accessLevel: formValues.accessLevel,
         timestamp: Date.now(),
-        changes: changeSet.changes,
+        changes: isReviewMode ? reviewChanges : changeSet.changes,
       };
 
       console.log('Submit Payload:', payload);
       // TODO: Call your API here
       // await yourApi.submitContribution(payload);
 
-      alert('Changes submitted successfully!');
+      message.success('Changes submitted successfully!');
     } catch (error) {
       console.error('Validation failed:', error);
     }
   };
 
   const resetAllChanges = useCallback(() => {
-    const title = isReviewMode ? 'Abandon review?' : 'Reset all changes?';
+    const title = isReviewMode ? 'Cancel review?' : 'Reset all changes?';
     const content = isReviewMode
-      ? 'This will abandon the current review and clear all changes. Are you sure?'
+      ? 'This will cancel the current review and discard all changes. Are you sure?'
       : 'This will clear all unsaved edits. Are you sure?';
 
     Modal.confirm({
       title,
       content,
+      okText: isReviewMode ? 'Cancel Review' : 'Reset Changes',
+      okButtonProps: { danger: true },
       onOk: () => {
         if (isReviewMode) {
-          handleAbandonReview();
+          handleCancelReview();
         } else {
-          // Use current values without adding to dependencies
-          const currentChangeSet = changeSet;
-          onChange({ ...currentChangeSet, changes: [] });
+          onChange({ ...changeSet, changes: [] });
           contributeForm.resetFields();
         }
       },
     });
-  }, [isReviewMode, handleAbandonReview, changeSet, onChange, contributeForm]);
+  }, [isReviewMode, handleCancelReview, changeSet, onChange, contributeForm]);
 
   const toggleExpandAll = () => {
     const allKeys = sections?.map((section) => section.key as string) ?? [];
@@ -421,8 +512,9 @@ export const ContributionForm = ({
 
   const handleDeletePropertyChange = useCallback(
     (propertyToDelete: string) => {
-      const prev = changeSet;
-      const updatedChanges: EntityChange[] = prev.changes
+      const changesToUpdate = isReviewMode ? reviewChanges : changeSet.changes;
+
+      const updatedChanges: EntityChange[] = changesToUpdate
         .map((entityChange) => {
           if (
             'changes' in entityChange &&
@@ -461,13 +553,30 @@ export const ContributionForm = ({
         })
         .filter(Boolean) as EntityChange[];
 
-      onChange({
-        ...prev,
-        changes: updatedChanges,
-      });
+      if (isReviewMode) {
+        setReviewChanges(updatedChanges);
+        onChange({ ...changeSet, changes: updatedChanges });
+      } else {
+        onChange({
+          ...changeSet,
+          changes: updatedChanges,
+        });
+      }
     },
-    [changeSet, onChange],
+    [isReviewMode, reviewChanges, changeSet, onChange],
   );
+
+  // Display the appropriate change count
+  const displayedChanges = isReviewMode ? reviewChanges : changeSet.changes;
+  const isShowStartReview =
+    mode === ReviewMode.ReadOnly &&
+    !isReviewMode &&
+    (currentStatus === ContributionStatus.Submitted ||
+      currentStatus === ContributionStatus.WorkInProgress);
+  const isShowStartReviewDisable = ![
+    ContributionStatus.Submitted,
+    ContributionStatus.WorkInProgress,
+  ].includes(currentStatus!);
 
   return (
     <>
@@ -487,17 +596,34 @@ export const ContributionForm = ({
         <Card
           title={
             <div className="contribute-edit-header">
-              <span>Contribution Details</span>
-              {mode === ReviewMode.ReadOnly && !isReviewMode && (
-                <>
-                  <Button
-                    icon={<EditOutlined />}
-                    onClick={handleStartReview}
-                    disabled={currentStatus === ContributionStatus.Published}
-                  >
-                    Start Review
+              <span>
+                {isReviewMode ? 'Review Details' : 'Contribution Details'}
+              </span>
+              {isShowStartReview && (
+                <Button
+                  icon={<EditOutlined />}
+                  onClick={handleStartReview}
+                  disabled={isShowStartReviewDisable}
+                  type="primary"
+                >
+                  Start Review
+                </Button>
+              )}
+              {isReviewMode && (
+                <div className="action-review-btn">
+                  <Button onClick={handleCancelReview} danger>
+                    <div className="abandon-review"> Cancel Review </div>
                   </Button>
-                </>
+                  <Button
+                    onClick={handleCommitReview}
+                    type="primary"
+                    disabled={reviewChanges.length === 0}
+                  >
+                    <div className="commit-review">
+                      Commit Review ({reviewChanges.length} changes)
+                    </div>
+                  </Button>
+                </div>
               )}
             </div>
           }
@@ -580,12 +706,23 @@ export const ContributionForm = ({
                 zIndex: 99,
               }}
             >
-              <Text strong>{translatedcontribute.titleCollaps}</Text>
-              <Button onClick={toggleExpandAll} style={{ marginLeft: 12 }}>
-                {globalExpand
-                  ? translatedcontribute.collapse
-                  : translatedcontribute.expand}
-              </Button>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}
+              >
+                <Text strong>
+                  {translatedcontribute.titleCollaps}
+                  {isReviewMode && ' (Review Mode - Changes Stack on Original)'}
+                </Text>
+                <Button onClick={toggleExpandAll}>
+                  {globalExpand
+                    ? translatedcontribute.collapse
+                    : translatedcontribute.expand}
+                </Button>
+              </div>
             </div>
             <div
               style={{
@@ -599,7 +736,7 @@ export const ContributionForm = ({
                   key={entity.entityRef.id}
                   schema={schema}
                   entity={isReviewMode ? stackedEntity : entity}
-                  changes={changeSet.changes}
+                  changes={displayedChanges}
                   onChange={isReadOnlyMode ? () => {} : onChangesUpdate}
                   expandedMenu={expandedMenu}
                   setExpandedMenu={setExpandedMenu}
@@ -650,31 +787,34 @@ export const ContributionForm = ({
                 justifyContent: 'space-between',
               }}
             >
-              <Text strong>Changes Summary</Text>
+              <Text strong>
+                {isReviewMode ? 'Review Changes' : 'Changes Summary'}
+              </Text>
               <Text type="secondary">
-                {changeSet.changes.length} change
-                {changeSet.changes.length !== 1 && 's'}
+                {displayedChanges.length} change
+                {displayedChanges.length !== 1 && 's'}
               </Text>
             </div>
 
             <div style={{ flex: 1, overflowY: 'auto', padding: 12 }}>
               <ChangesSummary
-                changes={changeSet.changes}
+                changes={displayedChanges}
                 resetAllChanges={resetAllChanges}
                 submitChanges={submitChanges}
                 handleSaveChanges={submitChanges}
                 handlePreview={handlePreviewChanges}
-                entity={entity}
+                entity={isReviewMode ? stackedEntity : entity}
                 handleDeleteChange={handleDeletePropertyChange}
                 isReviewMode={isReviewMode}
                 onCommitReview={handleCommitReview}
                 readOnly={isReadOnlyMode}
+                currentStatus={currentStatus}
               />
             </div>
           </Card>
         </Col>
       </Row>
-      {isReviewMode && (
+      {currentStatus === 1 && (
         <ContributionEditDecision
           handleEditorialDecisionSubmit={handleEditorialDecisionSubmit}
           setSelectedDecision={setSelectedDecision}

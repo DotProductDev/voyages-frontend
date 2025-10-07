@@ -32,6 +32,7 @@ interface ChangesSummaryProps {
   isReviewMode?: boolean;
   onCommitReview?: () => void;
   readOnly?: boolean;
+  currentStatus?: number;
 }
 
 const ChangesSummary = ({
@@ -44,6 +45,7 @@ const ChangesSummary = ({
   isReviewMode = false,
   onCommitReview,
   readOnly = false,
+  currentStatus,
 }: ChangesSummaryProps) => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>

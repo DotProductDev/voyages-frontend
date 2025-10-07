@@ -1,7 +1,7 @@
 import React from 'react';
 
 import { useSelector } from 'react-redux';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
 // Form Components
 import EditExistingVoyage from '@/components/PresentationComponents/Contribute/Form/EditExistingVoyage';
@@ -42,6 +42,7 @@ type ComponentRenderer = () => JSX.Element;
 const ContributeContent: React.FC<ContributeContentProps> = ({
   openSideBar,
 }) => {
+  const location = useLocation();
   const { handleClickGuidelines, handleResetPasswordClick } = useNavigation();
   const { contributePath, endpointPath, contributePathEditorial } =
     usePageRouter();
@@ -74,9 +75,6 @@ const ContributeContent: React.FC<ContributeContentProps> = ({
     delete_voyage: () => <RecommendVoyageDeletion />,
 
     // Editorial platform routes
-    'editor_main/requests': () => (
-      <EditorialPlatformTable openSideBar={openSideBar} />
-    ),
     'editor_main/pending': () => <EditVoyages />,
     'editor_main/enslavers_contrib': () => <EditEnslavers />,
     'editor_main/enslaved_contrib': () => <EditEnslaved />,
@@ -87,14 +85,23 @@ const ContributeContent: React.FC<ContributeContentProps> = ({
   };
 
   const getDisplayContent = (): JSX.Element => {
-    // Check contribute path first
-    if (contributePath && routeComponents[contributePath]) {
-      return routeComponents[contributePath]();
+    // FIXED: Check actual URL pathname for requests routes
+    // This handles both /editor_main/requests and /editor_main/requests/:id
+    if (location.pathname.includes('/contribute/editor_main/requests')) {
+      return <EditorialPlatformTable openSideBar={openSideBar} />;
     }
 
-    // Check editorial path
-    if (contributePathEditorial && routeComponents[contributePathEditorial]) {
-      return routeComponents[contributePathEditorial]();
+    // Check editorial path from hook
+    if (contributePathEditorial) {
+      // Check if it matches any route in our config
+      if (routeComponents[contributePathEditorial]) {
+        return routeComponents[contributePathEditorial]();
+      }
+    }
+
+    // Check contribute path
+    if (contributePath && routeComponents[contributePath]) {
+      return routeComponents[contributePath]();
     }
 
     // Default to home page
@@ -102,7 +109,7 @@ const ContributeContent: React.FC<ContributeContentProps> = ({
       return <ContributeHomeWelcome />;
     }
 
-    // Fallback - could also throw an error or show a 404 component
+    // Fallback
     return <ContributeHomeWelcome />;
   };
 
