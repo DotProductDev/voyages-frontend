@@ -170,6 +170,7 @@ export const ContributionForm = ({
     }
 
     try {
+      // Create a mock contribution with all reviews
       const mockContribution: Contribution = {
         id: contributionId,
         root: entity.entityRef,
@@ -179,25 +180,38 @@ export const ContributionForm = ({
         media: [],
       };
 
+      // Get the combined changeset from the library
       const combinedChangeSet = combineContributionChanges(mockContribution);
+
+      // Convert the combined changeset back to EntityChange format
       const allChanges: EntityChange[] = [
         ...combinedChangeSet.deletions,
         ...combinedChangeSet.updates,
       ];
 
+      // Clone the entity
       const stackedEntityClone = cloneEntity(entity);
-      const expandedEntity = expandMaterialized(stackedEntityClone, allChanges);
 
+      // Expand the entity to ensure all nested structures are available
+      const expandedEntity = expandMaterialized(stackedEntityClone);
+
+      // Apply all changes from the combined changeset
+      applyChanges(expandedEntity, allChanges);
+
+      // Then apply changes in stacking order:
+      // 1. Apply original contribution changes
       if (originalChanges.length > 0) {
         applyChanges(expandedEntity, originalChanges);
       }
 
+      // 2. Apply each committed review's changes
       reviews.forEach((review) => {
         if (review.changeSet.changes && review.changeSet.changes.length > 0) {
           applyChanges(expandedEntity, review.changeSet.changes);
         }
       });
 
+      // 3. Apply current review changes (if in review mode)
       if (isReviewMode && reviewChanges.length > 0) {
         applyChanges(expandedEntity, reviewChanges);
       }
