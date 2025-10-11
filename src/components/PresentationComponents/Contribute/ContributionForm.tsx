@@ -168,7 +168,7 @@ export const ContributionForm = ({
     if (!contributionId) {
       return entity;
     }
-
+    console.log({ entity, changeSet });
     try {
       // Create a mock contribution with all reviews
       const mockContribution: Contribution = {
