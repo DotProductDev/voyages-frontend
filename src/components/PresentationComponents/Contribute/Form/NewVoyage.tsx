@@ -1,7 +1,7 @@
 import '@/style/contributeContent.scss';
 import '@/style/newVoyages.scss';
 import React, { useCallback, useEffect, useState } from 'react';
-
+import { v4 as uuidv4 } from 'uuid';
 import {
   VoyageSchema,
   EntitySchema,
@@ -21,7 +21,7 @@ export interface EntityFormProps {
   schema: EntitySchema;
 }
 
-const tempNewVoyage = materializeNew(VoyageSchema, '9999999');
+const tempNewVoyage = materializeNew(VoyageSchema, uuidv4());
 
 export interface NewVoyageProps {
   entity?: MaterializedEntity;
@@ -38,7 +38,7 @@ const NewVoyage: React.FC = ({ entity = tempNewVoyage }: NewVoyageProps) => {
   
   const [form] = Form.useForm();
   const [changeSet, setChangeSet] = useState<ChangeSet>({
-    id: '-1',
+    id: uuidv4(),
     author: username || email ||name,
     title: 'Mocked new voyage',
     changes: [],

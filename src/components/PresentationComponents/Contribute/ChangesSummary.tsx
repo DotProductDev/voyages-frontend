@@ -145,19 +145,6 @@ const ChangesSummary = ({
           </>
         )}
       </Space.Compact>
-      {isSaveChange && !isReviewMode && (
-        <div style={{ 
-          marginTop: 8, 
-          padding: '8px 12px',
-          background: '#f6ffed',
-          border: '1px solid #b7eb8f',
-          borderRadius: '4px',
-          fontSize: '12px',
-          color: '#52c41a'
-        }}>
-          ✓ Changes saved. You can now submit your contribution.
-        </div>
-      )}
     </div>
   );
 };

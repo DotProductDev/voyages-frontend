@@ -434,7 +434,7 @@ export const ContributionForm = ({
       },
     });
   }, [selectedDecision, decisionComments, onEditorialDecision]);
-
+  
   const onChangesUpdate = useCallback(
     (newChange: EntityChange) => {
       // Reset save state when new changes are made
@@ -485,7 +485,7 @@ export const ContributionForm = ({
   const handleSaveChanges = async () => {
     setIsSaving(true);
     setIsSaveChange(false); // Reset while saving
-    
+    console.log("changeSet.author", changeSet.author)
     try {
       const formValues = await contributeForm.validateFields();
       
@@ -504,8 +504,6 @@ export const ContributionForm = ({
         },
         status: ContributionStatus.WorkInProgress,
       };
-  
-      console.log('Save Payload:', payload);
   
       const response = await createSaveChangeContribution(payload);
   
@@ -904,7 +902,19 @@ export const ContributionForm = ({
                 {displayedChanges.length !== 1 && 's'}
               </Text>
             </div>
-
+          {isSaveChange && !isReviewMode && (
+            <div style={{ 
+              marginTop: 8, 
+              padding: '8px 12px',
+              background: '#f6ffed',
+              border: '1px solid #b7eb8f',
+              borderRadius: '4px',
+              fontSize: '12px',
+              color: '#52c41a'
+            }}>
+              ✓ Changes saved. You can now submit your contribution.
+            </div>
+          )}
             <div style={{ flex: 1, overflowY: 'auto', padding: 12 }}>
               <ChangesSummary
                 changes={displayedChanges}
