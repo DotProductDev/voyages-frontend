@@ -35,6 +35,14 @@ export interface LinkedEntityPropertyComponentProps {
   readOnly?: boolean;
 }
 
+// Utility to strip HTML tags and decode entities
+const stripHtmlTags = (html: string): string => {
+  if (!html) return 'N/A';
+  const temp = document.createElement('div');
+  temp.innerHTML = html;
+  return temp.textContent || temp.innerText || 'N/A';
+};
+
 const LinkedLocationComponent = (
   props: Omit<TreeSelectedEntityProps, 'locationsList'>,
 ) => {
@@ -62,18 +70,23 @@ export const LinkedEntityPropertyComponent = (
   const { property, entity, lastChange, onChange, readOnly = false } = props;
   const [comments, setComments] = useState<string | undefined>();
   const { uid, mode, label, linkedEntitySchema } = property;
+  
   const value = lastChange
     ? lastChange.changed
     : (entity.data[label] as MaterializedEntity | null);
+    
   if (value && !isMaterializedEntity(value)) {
     return <span>BUG: Expected an entity reference value!</span>;
   }
+  
   if (mode === EntityLinkEditMode.View) {
     return <span>{value?.entityRef.id ?? 'null'}</span>;
   }
+  
   if (mode === EntityLinkEditMode.Own) {
     return <LinkedEntityOwnedPropertyComponent {...props} />;
   }
+  
   const linkedSchema = getSchema(linkedEntitySchema);
   const { items: optionItems } = useSchemaEnumeration(linkedEntitySchema);
 
@@ -82,14 +95,16 @@ export const LinkedEntityPropertyComponent = (
   const options = useMemo(() => {
     const res = optionItems.map((entity) => {
       const labelText = linkedSchema.getLabel(entity.data, true);
+      const cleanText = stripHtmlTags(labelText);
       return {
-        label: labelText,
+        label: labelText, 
         value: entity.entityRef.id,
         entity,
-        searchText: labelText.replace(/<[^>]+>/g, ''),
+        searchText: cleanText, 
       };
     });
 
+    // Handle new entities from debounced changes
     if (debouncedLastChange?.changed?.entityRef.type === 'new') {
       const updatedLinkedEntity = debouncedLastChange.linkedChanges
         ? applyUpdate(
@@ -97,17 +112,19 @@ export const LinkedEntityPropertyComponent = (
             debouncedLastChange.linkedChanges,
           )
         : debouncedLastChange.changed;
+        
+      const newLabelText = linkedSchema.getLabel(updatedLinkedEntity.data, true);
+      
       res.push({
-        label: linkedSchema.getLabel(updatedLinkedEntity.data, true),
+        label: newLabelText,
         value: debouncedLastChange.changed.entityRef.id,
         entity: updatedLinkedEntity,
-        searchText: linkedSchema
-          .getLabel(updatedLinkedEntity.data, true)
-          .replace(/<[^>]+>/g, ''),
+        searchText: stripHtmlTags(newLabelText),
       });
     }
+    
     return res;
-  }, [optionItems, debouncedLastChange]);
+  }, [optionItems, linkedSchema, debouncedLastChange]);
 
   const handleChange = useCallback(
     (item: string | number | null) => {
@@ -117,9 +134,11 @@ export const LinkedEntityPropertyComponent = (
       if (item === currentId && comments === lastChange?.comments) {
         return;
       }
+      
       const matchedOption = options.find(
         (x) => String(x.value) === String(item),
       );
+      
       if (!matchedOption) {
         console.warn('No matching option found for item:', item);
         return;
@@ -211,14 +230,13 @@ export const LinkedEntityPropertyComponent = (
         onChange={readOnly ? undefined : handleChange}
         showSearch={!readOnly}
         disabled={readOnly}
+        popupMatchSelectWidth={false}
         styles={{
-          popup: {
-            root: {
-              maxHeight: 400,
+          popup:{
+            root:{  maxHeight: 400,
               overflow: 'auto',
-              zIndex: 9999,
-            },
-          },
+              zIndex: 9999,}
+          }
         }}
         optionLabelProp="label"
         filterOption={readOnly ? undefined : (input: string, option: any) =>

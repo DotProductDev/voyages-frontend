@@ -1,6 +1,6 @@
 import '@/style/contributeContent.scss';
 import '@/style/newVoyages.scss';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 
 import {
   VoyageSchema,
@@ -8,11 +8,14 @@ import {
   materializeNew,
   MaterializedEntity,
   ChangeSet,
+  ContributionStatus,
 } from '@dotproductdev/voyages-contribute';
-import { Box, Button } from '@mui/material';
 import { Divider, Form, Input, message } from 'antd';
 
 import { ContributionForm, ReviewMode } from '../ContributionForm';
+import { loadUserFromStorage } from '@/redux/getAuthUserSlice';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState } from '@/redux/store';
 
 export interface EntityFormProps {
   schema: EntitySchema;
@@ -25,64 +28,23 @@ export interface NewVoyageProps {
 }
 
 const NewVoyage: React.FC = ({ entity = tempNewVoyage }: NewVoyageProps) => {
+  const dispatch = useDispatch();
+  const { user } = useSelector((state: RootState) => state.getAuthUserSlice);
+  const {email, name, username} = user
+  
+  useEffect(() => {
+    dispatch(loadUserFromStorage());
+  }, []);
+  
   const [form] = Form.useForm();
-  const [comments] = useState<{ [key: string]: string }>({});
   const [changeSet, setChangeSet] = useState<ChangeSet>({
     id: '-1',
-    author: 'Mocked',
+    author: username || email ||name,
     title: 'Mocked new voyage',
     changes: [],
     comments: '',
     timestamp: new Date().getTime(),
   });
-
-  // Handlers for the form submission
-  const handleSave = useCallback(async () => {
-    try {
-      const values = await form.validateFields();
-
-      // Combine form data with comments
-      const submissionData = {
-        ...values,
-        comments,
-      };
-
-      console.log('Save submission data:', submissionData);
-
-      // Simulate an API call or state update
-      // Replace with your actual API integration
-      const response = await saveVoyageData(submissionData);
-    } catch (error) {
-      console.error('Save error:', error);
-      message.error('Please correct the errors before saving.');
-    }
-  }, [form, comments]);
-
-  // Mock API call function
-  const saveVoyageData = async (data: any) => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({ success: true });
-      }, 1000);
-    });
-  };
-
-  const handleReview = () => {
-    form
-      .validateFields()
-      .then((values) => {
-        console.log('Review values:', values);
-        message.info('Review process started.');
-      })
-      .catch((error) => {
-        message.error('Please correct the errors before reviewing.');
-      });
-  };
-
-  const handleCancel = () => {
-    form.resetFields();
-    message.warning('Contribution canceled.');
-  };
 
   return (
     <div className="contribute-content">
@@ -102,7 +64,6 @@ const NewVoyage: React.FC = ({ entity = tempNewVoyage }: NewVoyageProps) => {
         <Form.Item
           name="voyageComments"
           label={<span className="lable-title">Voyage comments:</span>}
-          // rules={[{ required: true, message: "Voyage comments are required" }]}
         >
           <Input.TextArea rows={2} />
         </Form.Item>
@@ -120,79 +81,6 @@ const NewVoyage: React.FC = ({ entity = tempNewVoyage }: NewVoyageProps) => {
         onChange={setChangeSet}
         mode={ReviewMode.Create}
       />
-      <Divider style={{ margin: '12px 0' }} />
-      <Form layout="vertical" form={form}>
-        <Form.Item
-          name="contributorsComments"
-          label={
-            <span className="lable-title">
-              Contributor’s Comments on This Entry:
-            </span>
-          }
-        >
-          <Input.TextArea rows={2} />
-        </Form.Item>
-        <Box sx={{ mt: 3, mb: 3 }}>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={handleSave}
-            sx={{
-              backgroundColor: 'rgb(55, 148, 141)',
-              color: '#fff',
-              height: 35,
-              fontSize: '0.85rem',
-              textTransform: 'none',
-              '&:hover': {
-                backgroundColor: 'rgba(6, 186, 171, 0.83)',
-              },
-            }}
-          >
-            Save
-          </Button>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={handleReview}
-            sx={{
-              backgroundColor: 'transparent',
-              border: '1px solid rgb(55, 148, 141)',
-              color: 'rgb(55, 148, 141)',
-              height: 35,
-              fontSize: '0.85rem',
-              textTransform: 'none',
-              boxShadow: 'transparent',
-              marginLeft: '10px',
-              '&:hover': {
-                backgroundColor: 'rgb(55, 148, 141)',
-                color: '#fff',
-              },
-            }}
-          >
-            Review
-          </Button>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={handleCancel}
-            sx={{
-              backgroundColor: '#dc3545',
-              border: '1px solid #dc3545',
-              color: '#fff',
-              height: 35,
-              fontSize: '0.85rem',
-              textTransform: 'none',
-              boxShadow: 'transparent',
-              marginLeft: '10px',
-              '&:hover': {
-                backgroundColor: '#c82333',
-              },
-            }}
-          >
-            Cancel contribution
-          </Button>
-        </Box>
-      </Form>
     </div>
   );
 };

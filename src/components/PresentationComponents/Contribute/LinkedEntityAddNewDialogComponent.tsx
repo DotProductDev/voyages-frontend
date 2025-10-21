@@ -53,7 +53,6 @@ const LinkedEntityAddNewComponent = (
   >(undefined);
   const [localChanges, setLocalChanges] = useState<EntityUpdate | undefined>();
   const linkedSchema = getSchema(linkedEntitySchema);
-  console.log({ draggable });
   const onClose = useCallback(() => setOpen(false), []);
 
   useEffect(() => {
@@ -75,6 +74,7 @@ const LinkedEntityAddNewComponent = (
   const editAdded = useCallback(
     (e: MaterializedEntity | null, changes?: EntityUpdate) => {
       const localPropChanges = changes ? changes.changes : [];
+        console.log({localPropChanges})
       onChange({
         type: 'update',
         entityRef: entity.entityRef,
@@ -137,7 +137,7 @@ const LinkedEntityAddNewComponent = (
     },
     [addedEntity, editAdded],
   );
-  console.log({ addedEntity });
+
   return (
     <>
       <Stack
@@ -248,7 +248,6 @@ const LinkedEntityAddNewComponent = (
             </Form>
           )}
         </DialogContent>
-        <FooterModal content="" />
       </Dialog>
     </>
   );

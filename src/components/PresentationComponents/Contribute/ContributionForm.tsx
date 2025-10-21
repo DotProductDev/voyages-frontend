@@ -49,6 +49,8 @@ import ContributionEditDecision from './ContributionEditDecision';
 import { EntityForm } from './EntityForm';
 import PreviewChangeDialog from './PreviewChange/PreviewChangeDialog';
 import { TransformedContribution } from './utils/transformContributionData';
+import { createSaveChangeContribution, CreateContributionPayload } from '@/fetch/contributeFetch/createSaveChangeContribution';
+import { createSubmitChangeContribution } from '@/fetch/contributeFetch/createSubmitChangeContribution';
 
 const { Text } = Typography;
 
@@ -106,6 +108,7 @@ export interface ContributionFormProps {
   onStartReview?: () => void;
   onCommitReview?: (review: Review) => void;
   onAbandonReview?: () => void;
+  handleSaveChanges?: () => Promise<void>;
   onEditorialDecision?: (
     decision: 'accept' | 'reject',
     comments?: string,
@@ -129,6 +132,10 @@ export const ContributionForm = ({
   title,
 }: ContributionFormProps) => {
   const { contributePath } = usePageRouter();
+  const { languageValue } = useSelector(
+    (state: RootState) => state.getLanguages,
+  );
+  const translatedcontribute = translationLanguagesContribute(languageValue);
   const [contributeForm] = Form.useForm();
   const schema = getSchema(entity.entityRef.schema);
   const [accessLevel, setAccessLevel] = useState<PropertyAccessLevel>(
@@ -137,10 +144,11 @@ export const ContributionForm = ({
   const [globalExpand, setGlobalExpand] = useState(false);
   const [expandedMenu, setExpandedMenu] = useState<string[]>([]);
   const [sections, setSections] = useState<CollapseProps['items']>([]);
-  const { languageValue } = useSelector(
-    (state: RootState) => state.getLanguages,
-  );
-  const translatedcontribute = translationLanguagesContribute(languageValue);
+  const [isSaveChange, setIsSaveChange] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+
   const [previewEntity, setPreviewEntity] = useState<
     MaterializedEntity | undefined
   >(undefined);
@@ -429,20 +437,19 @@ export const ContributionForm = ({
 
   const onChangesUpdate = useCallback(
     (newChange: EntityChange) => {
+      // Reset save state when new changes are made
+      setIsSaveChange(false);
+      
       if (isReviewMode) {
-        // In review mode, update the review changes separately
         const nextReviewChanges = addToChangeSet(reviewChanges, newChange);
         dropOrphans(nextReviewChanges);
         const combined = combineEntityChanges(nextReviewChanges);
         setReviewChanges(combined);
-
-        // Update the changeSet for display
         onChange({
           ...changeSet,
           changes: combined,
         });
       } else {
-        // Normal mode - update changes as before
         const next = addToChangeSet(changeSet.changes, newChange);
         dropOrphans(next);
         const combined = combineEntityChanges(next);
@@ -474,27 +481,115 @@ export const ContributionForm = ({
     entity,
   ]);
 
-  const submitChanges = async () => {
+
+  const handleSaveChanges = async () => {
+    setIsSaving(true);
+    setIsSaveChange(false); // Reset while saving
+    
     try {
       const formValues = await contributeForm.validateFields();
-
-      const payload = {
-        title: formValues.title,
-        comments: formValues.comments,
-        accessLevel: formValues.accessLevel,
-        timestamp: Date.now(),
-        changes: isReviewMode ? reviewChanges : changeSet.changes,
+      
+      const changesToSubmit = isReviewMode ? reviewChanges : changeSet.changes;
+  
+      const payload: CreateContributionPayload = {
+        id: contributionId || changeSet.id,
+        root: entity.entityRef,
+        changeSet: {
+          title: formValues.title || changeSet.title,
+          comments: formValues.comments || changeSet.comments || '',
+          timestamp: Date.now(),
+          changes: changesToSubmit,
+          author: changeSet.author || 'Unknown',
+          id: changeSet.id,
+        },
+        status: ContributionStatus.WorkInProgress,
       };
-
-      console.log('Submit Payload:', payload);
-      // TODO: Call your API here
-      // await yourApi.submitContribution(payload);
-
-      message.success('Changes submitted successfully!');
+  
+      console.log('Save Payload:', payload);
+  
+      const response = await createSaveChangeContribution(payload);
+  
+      message.success('Changes saved successfully!');
+      console.log('Save response:', response);
+      
+      setIsSaveChange(true); 
+      
+      if (isReviewMode) {
+        setReviewChanges([]);
+        setIsReviewMode(false);
+      } else {
+        onChange({
+          ...response.changeSet,
+        });
+      }
     } catch (error) {
-      console.error('Validation failed:', error);
+      console.error('Validation or save failed:', error);
+      message.error(
+        error instanceof Error 
+          ? error.message 
+          : 'Failed to save changes. Please check the form.'
+      );
+    } finally {
+      setIsSaving(false);
     }
   };
+
+  const handleSubmitChanges = async () => {
+  if (!isSaveChange) {
+    message.warning('Please save your changes before submitting');
+    return;
+  }
+
+  setIsSubmitting(true);
+  
+  try {
+    const formValues = contributeForm.getFieldsValue();
+    
+    const changesToSubmit = isReviewMode ? reviewChanges : changeSet.changes;
+
+    const payload: CreateContributionPayload = {
+      id: contributionId || changeSet.id,
+      root: entity.entityRef,
+      changeSet: {
+        title: formValues.title || changeSet.title,
+        comments: formValues.comments || changeSet.comments || '',
+        timestamp: Date.now(),
+        changes: changesToSubmit,
+        author: changeSet.author || 'Unknown',
+        id: changeSet.id,
+      },
+      status: ContributionStatus.Submitted, // Submit as Submitted
+    };
+
+    console.log('Submit Payload:', payload);
+
+    const response = await createSubmitChangeContribution(payload);
+
+    message.success('Contribution submitted successfully!');
+    console.log('Submit response:', response);
+    
+    // Reset states after successful submission
+    setIsSaveChange(false);
+    
+    if (isReviewMode) {
+      setReviewChanges([]);
+      setIsReviewMode(false);
+    } else {
+      onChange({
+        ...response.changeSet,
+      });
+    }
+  } catch (error) {
+    console.error('Submission failed:', error);
+    message.error(
+      error instanceof Error 
+        ? error.message 
+        : 'Failed to submit contribution.'
+    );
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   const resetAllChanges = useCallback(() => {
     const title = isReviewMode ? 'Cancel review?' : 'Reset all changes?';
@@ -598,7 +693,7 @@ export const ContributionForm = ({
       <Form
         form={contributeForm}
         layout="vertical"
-        onFinish={submitChanges}
+        onFinish={isSaveChange ? handleSaveChanges: handleSubmitChanges}
         style={{
           ...ContributionSectionStyle,
           display: 'flex',
@@ -814,8 +909,8 @@ export const ContributionForm = ({
               <ChangesSummary
                 changes={displayedChanges}
                 resetAllChanges={resetAllChanges}
-                submitChanges={submitChanges}
-                handleSaveChanges={submitChanges}
+                submitChanges={handleSubmitChanges}
+                handleSaveChanges={handleSaveChanges}
                 handlePreview={handlePreviewChanges}
                 entity={isReviewMode ? stackedEntity : entity}
                 handleDeleteChange={handleDeletePropertyChange}
@@ -823,6 +918,9 @@ export const ContributionForm = ({
                 onCommitReview={handleCommitReview}
                 readOnly={isReadOnlyMode}
                 currentStatus={currentStatus}
+                isSaveChange={isSaveChange}
+                isSaving={isSaving}
+                isSubmitting={isSubmitting}
               />
             </div>
           </Card>

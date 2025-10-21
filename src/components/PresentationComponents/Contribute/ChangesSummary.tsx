@@ -33,6 +33,9 @@ interface ChangesSummaryProps {
   onCommitReview?: () => void;
   readOnly?: boolean;
   currentStatus?: number;
+  isSaveChange?: boolean
+  isSaving?: boolean
+  isSubmitting?: boolean
 }
 
 const ChangesSummary = ({
@@ -46,7 +49,11 @@ const ChangesSummary = ({
   onCommitReview,
   readOnly = false,
   currentStatus,
+  isSaveChange = false,     
+  isSaving = false,         
+  isSubmitting = false, 
 }: ChangesSummaryProps) => {
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <div style={{ flex: 1, overflowY: 'auto' }}>
@@ -109,13 +116,17 @@ const ChangesSummary = ({
               }
               disabled={changes.length === 0}
             >
-              {isReviewMode ? 'Commit Review' : 'Save Changes'}
+              {isSaving 
+                ? 'Saving...' 
+                : isReviewMode 
+                  ? 'Commit Review' 
+                  : 'Save Changes'}
             </Button>
             <Button
               icon={<ReloadOutlined />}
               danger
               onClick={resetAllChanges}
-              disabled={changes.length === 0}
+              disabled={changes.length === 0 || isSaving || isSubmitting}
             >
               {isReviewMode ? 'Abandon Review' : 'Reset All'}
             </Button>
@@ -125,14 +136,28 @@ const ChangesSummary = ({
                 type="primary"
                 onClick={submitChanges}
                 block
-                disabled={submitChanges === undefined}
+                disabled={!isSaveChange || submitChanges === undefined}
+                loading={isSubmitting}
               >
-                Submit Changes
+                {isSubmitting ? 'Submitting...' : 'Submit Changes'}
               </Button>
             )}
           </>
         )}
       </Space.Compact>
+      {isSaveChange && !isReviewMode && (
+        <div style={{ 
+          marginTop: 8, 
+          padding: '8px 12px',
+          background: '#f6ffed',
+          border: '1px solid #b7eb8f',
+          borderRadius: '4px',
+          fontSize: '12px',
+          color: '#52c41a'
+        }}>
+          ✓ Changes saved. You can now submit your contribution.
+        </div>
+      )}
     </div>
   );
 };

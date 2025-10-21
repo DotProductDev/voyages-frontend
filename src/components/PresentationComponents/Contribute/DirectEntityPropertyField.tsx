@@ -1,5 +1,4 @@
 import { useState, useCallback } from 'react';
-
 import {
   DirectPropertyChange,
   MaterializedEntity,
@@ -13,7 +12,6 @@ import { Checkbox } from '@mui/material';
 import { Input } from 'antd';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
-
 import { EntityFormProps } from './EntityForm';
 import { EntityPropertyChangeCommentBox } from './EntityPropertyChangeCommentBox';
 
@@ -43,18 +41,21 @@ export const DirectEntityPropertyField = ({
 }: DirectEntityPropertyFieldProps) => {
   const { kind, label } = property;
   const [comments, internalSetComments] = useState<string | undefined>();
+  
   const value = lastChange
     ? lastChange.changed
     : ((entity.data[label] ?? null) as DirectPropertyChange['changed']);
 
   const handleChange = useCallback(
     (changed: DirectPropertyChange['changed']) => {
+      // Skip if nothing changed
       if (
         changed === (lastChange?.changed ?? value) &&
         comments === lastChange?.comments
       ) {
         return;
       }
+
       onChange({
         type: 'update',
         entityRef: entity.entityRef,
@@ -81,6 +82,7 @@ export const DirectEntityPropertyField = ({
       label,
     ],
   );
+
   const setComments = useCallback(
     (c: string) => {
       internalSetComments(c);
@@ -91,13 +93,22 @@ export const DirectEntityPropertyField = ({
 
   const handleInputChange = useCallback(
     (localValue: string | number) => {
+      let processedValue = localValue;
+      
       if (kind === 'number' && typeof localValue === 'string') {
-        localValue = parseFloat(localValue);
+        processedValue = parseFloat(localValue);
+        // Handle NaN case
+        if (isNaN(processedValue)) {
+          return;
+        }
       }
-      handleChange(localValue);
+      
+      handleChange(processedValue);
     },
     [handleChange, kind],
   );
+
+  // Type guard for value
   if (
     value !== null &&
     typeof value !== 'string' &&
@@ -105,15 +116,17 @@ export const DirectEntityPropertyField = ({
     typeof value !== 'boolean'
   ) {
     return (
-      <span>BUG: Value type is incorrect for DirectEntityPropertyField</span>
+      <span style={{ color: 'red' }}>
+        Error: Invalid value type for this field
+      </span>
     );
   }
 
   return (
-    <>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
       {kind === 'bool' ? (
         <Checkbox
-          value={value}
+          checked={Boolean(value)}
           onChange={readOnly ? undefined : (e) => handleChange(e.target.checked)}
           disabled={readOnly}
         />
@@ -123,19 +136,18 @@ export const DirectEntityPropertyField = ({
           value={String(value ?? '')}
           onChange={readOnly ? undefined : (v) => handleInputChange(v)}
           readOnly={readOnly}
+          theme="snow"
         />
       ) : (
-        <>
-          <Input
-            className={`truncate-input ${lastChange ? 'changedEntityProperty' : ''}`}
-            type={kind}
-            placeholder={readOnly ? '' : `Enter ${lowerCaseFirstLetter(label)}`}
-            style={{ width: 'calc(100% - 20px)' }}
-            value={value === null ? '' : value + ''}
-            onChange={readOnly ? undefined : (e) => handleInputChange(e.target.value)}
-            readOnly={readOnly}
-          />
-        </>
+        <Input
+          className={`truncate-input ${lastChange ? 'changedEntityProperty' : ''}`}
+          type={kind === 'number' ? 'number' : 'text'}
+          style={{ width: 'calc(100% - 20px)' }}
+          placeholder={readOnly ? '' : `Enter ${lowerCaseFirstLetter(label)}`}
+          value={value === null || value === undefined ? '' : String(value)}
+          onChange={readOnly ? undefined : (e) => handleInputChange(e.target.value)}
+          readOnly={readOnly}
+        />
       )}
       <EntityPropertyChangeCommentBox
         property={property}
@@ -143,6 +155,6 @@ export const DirectEntityPropertyField = ({
         onComment={readOnly ? () => {} : setComments}
         readOnly={readOnly}
       />
-    </>
+    </div>
   );
 };

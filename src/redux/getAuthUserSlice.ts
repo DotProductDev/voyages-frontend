@@ -3,7 +3,12 @@ import { AuthState, User } from '@/share/InterfaceTypeUser';
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 const initialState: AuthState = {
-  user: null,
+  user: {
+    username: '',
+    name: '',
+    token:'',
+    email:''
+  },
 };
 
 const getAuthUserSlice = createSlice({
