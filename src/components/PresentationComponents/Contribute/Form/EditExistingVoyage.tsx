@@ -4,7 +4,7 @@ import '@/style/newVoyages.scss';
 import { useState } from 'react';
 
 import {
-  ChangeSet,
+  Contribution,
   MaterializedEntity,
 } from '@dotproductdev/voyages-contribute';
 import { Form, Input, Button } from 'antd';
@@ -39,7 +39,9 @@ const EditExistingVoyage: React.FC<EditExistingVoyageProps> = ({
     initialExistingVoyageEntity as MaterializedEntity,
   );
   const [loading, setLoading] = useState(false);
-  const [changeSet, setChangeSet] = useState<ChangeSet | undefined>(undefined);
+  const [contribuition, setContribuition] = useState<Contribution | undefined>(
+    undefined,
+  );
 
   const handleSubmit = async (values: any): Promise<void> => {
     const voyageId = values.voyageId;
@@ -49,13 +51,24 @@ const EditExistingVoyage: React.FC<EditExistingVoyageProps> = ({
       const res = await fetchSubmitEditVoaygesForm(voyageId);
       if (res.status === 200) {
         setEntity(res.data);
-        setChangeSet({
+        setContribuition({
           id: '-1',
-          author: 'Mocked',
-          title: `Mocked edit voyage ${voyageId}`,
-          changes: [],
-          comments: '',
-          timestamp: new Date().getTime(),
+          root: {
+            type: 'new',
+            schema: '',
+            id: '-1',
+          },
+          changeSet: {
+            id: '-1',
+            author: 'Mocked',
+            title: `Mocked edit voyage ${voyageId}`,
+            changes: [],
+            comments: '',
+            timestamp: new Date().getTime(),
+          },
+          status: 0,
+          reviews: [],
+          media: [],
         });
         setLoading(true);
       } else {
@@ -163,12 +176,12 @@ const EditExistingVoyage: React.FC<EditExistingVoyageProps> = ({
           </div>
         )}
       </div>
-      {hasEntity && changeSet && (
+      {hasEntity && contribuition && (
         <ContributionForm
           title="Edit an Existing Record of a Voyage"
           entity={entity}
-          changeSet={changeSet}
-          onChange={setChangeSet}
+          contribuition={contribuition}
+          onChange={setContribuition}
           mode={ReviewMode.Edit}
         />
       )}

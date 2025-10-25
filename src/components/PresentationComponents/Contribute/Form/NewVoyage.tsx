@@ -1,21 +1,22 @@
 import '@/style/contributeContent.scss';
 import '@/style/newVoyages.scss';
-import React, { useCallback, useEffect, useState } from 'react';
-import { v4 as uuidv4 } from 'uuid';
+import React, { useEffect, useState } from 'react';
+
 import {
   VoyageSchema,
   EntitySchema,
   materializeNew,
   MaterializedEntity,
-  ChangeSet,
-  ContributionStatus,
+  Contribution,
 } from '@dotproductdev/voyages-contribute';
-import { Divider, Form, Input, message } from 'antd';
+import { Divider, Form, Input } from 'antd';
+import { useDispatch, useSelector } from 'react-redux';
+import { v4 as uuidv4 } from 'uuid';
+
+import { loadUserFromStorage } from '@/redux/getAuthUserSlice';
+import { RootState } from '@/redux/store';
 
 import { ContributionForm, ReviewMode } from '../ContributionForm';
-import { loadUserFromStorage } from '@/redux/getAuthUserSlice';
-import { useDispatch, useSelector } from 'react-redux';
-import { RootState } from '@/redux/store';
 
 export interface EntityFormProps {
   schema: EntitySchema;
@@ -30,20 +31,33 @@ export interface NewVoyageProps {
 const NewVoyage: React.FC = ({ entity = tempNewVoyage }: NewVoyageProps) => {
   const dispatch = useDispatch();
   const { user } = useSelector((state: RootState) => state.getAuthUserSlice);
-  const {email, name, username} = user
-  
+  const { email, name, username } = user;
+
   useEffect(() => {
     dispatch(loadUserFromStorage());
-  }, []);
-  
+  }, [dispatch]);
+
   const [form] = Form.useForm();
-  const [changeSet, setChangeSet] = useState<ChangeSet>({
-    id: uuidv4(),
-    author: username || email ||name,
-    title: 'Mocked new voyage',
-    changes: [],
-    comments: '',
-    timestamp: new Date().getTime(),
+
+  const [contribuition, setContribuition] = useState<Contribution>({
+    id: '-1',
+    root: {
+      type: 'new',
+      schema: '',
+      id: '-1',
+    },
+    changeSet: {
+      // will change pass contribuition
+      id: uuidv4(),
+      author: username || email || name,
+      title: 'Mocked new voyage',
+      changes: [],
+      comments: '',
+      timestamp: new Date().getTime(),
+    },
+    status: 0,
+    reviews: [],
+    media: [],
   });
 
   return (
@@ -77,8 +91,8 @@ const NewVoyage: React.FC = ({ entity = tempNewVoyage }: NewVoyageProps) => {
       <Divider style={{ margin: '12px 0' }} />
       <ContributionForm
         entity={entity}
-        changeSet={changeSet}
-        onChange={setChangeSet}
+        contribuition={contribuition}
+        onChange={setContribuition}
         mode={ReviewMode.Create}
       />
     </div>

@@ -12,7 +12,6 @@ import {
   combineChanges,
   dropOrphans,
   EntityChange,
-  ChangeSet,
   getSchema,
   applyChanges,
   cloneEntity,
@@ -40,6 +39,8 @@ import {
 } from 'antd';
 import { useSelector } from 'react-redux';
 
+import { createSaveChangeContribution } from '@/fetch/contributeFetch/createSaveChangeContribution';
+import { createSubmitChangeContribution } from '@/fetch/contributeFetch/createSubmitChangeContribution';
 import { usePageRouter } from '@/hooks/usePageRouter';
 import { RootState } from '@/redux/store';
 import { translationLanguagesContribute } from '@/utils/functions/translationLanguages';
@@ -49,8 +50,6 @@ import ContributionEditDecision from './ContributionEditDecision';
 import { EntityForm } from './EntityForm';
 import PreviewChangeDialog from './PreviewChange/PreviewChangeDialog';
 import { TransformedContribution } from './utils/transformContributionData';
-import { createSaveChangeContribution, CreateContributionPayload } from '@/fetch/contributeFetch/createSaveChangeContribution';
-import { createSubmitChangeContribution } from '@/fetch/contributeFetch/createSubmitChangeContribution';
 
 const { Text } = Typography;
 
@@ -98,13 +97,12 @@ function combineEntityChanges(changes: EntityChange[]): EntityChange[] {
 
 export interface ContributionFormProps {
   entity: MaterializedEntity;
-  changeSet: ChangeSet;
-  onChange: (changeSet: ChangeSet | TransformedContribution) => void;
+  contribuition: Contribution;
+  onChange: (contribuition: Contribution | TransformedContribution) => void;
   accessLevel?: PropertyAccessLevel;
   contributionId?: string;
   currentStatus?: ContributionStatus;
   mode?: ReviewMode;
-  reviews?: Review[];
   onStartReview?: () => void;
   onCommitReview?: (review: Review) => void;
   onAbandonReview?: () => void;
@@ -118,19 +116,19 @@ export interface ContributionFormProps {
 
 export const ContributionForm = ({
   entity,
-  changeSet,
+  contribuition,
   onChange,
   accessLevel: initAccessLevel,
   contributionId,
   currentStatus,
   mode,
-  reviews = [],
   onStartReview,
   onCommitReview,
   onAbandonReview,
   onEditorialDecision,
   title,
 }: ContributionFormProps) => {
+  const { reviews, changeSet } = contribuition;
   const { contributePath } = usePageRouter();
   const { languageValue } = useSelector(
     (state: RootState) => state.getLanguages,
@@ -148,7 +146,6 @@ export const ContributionForm = ({
   const [isSaving, setIsSaving] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-
   const [previewEntity, setPreviewEntity] = useState<
     MaterializedEntity | undefined
   >(undefined);
@@ -160,10 +157,11 @@ export const ContributionForm = ({
 
   // Track review mode and changes
   const [isReviewMode, setIsReviewMode] = useState(mode === ReviewMode.Review);
-  const [currentReview, setCurrentReview] = useState<Review | null>(null);
   const [originalChanges, setOriginalChanges] = useState<EntityChange[]>([]);
   const [reviewChanges, setReviewChanges] = useState<EntityChange[]>([]);
-  const [preReviewState, setPreReviewState] = useState<ChangeSet | null>(null);
+  const [preReviewState, setPreReviewState] = useState<Contribution | null>(
+    null,
+  );
 
   useEffect(() => {
     setIsReviewMode(mode === ReviewMode.Review);
@@ -176,7 +174,7 @@ export const ContributionForm = ({
     if (!contributionId) {
       return entity;
     }
-    console.log({ entity, changeSet });
+
     try {
       // Create a mock contribution with all reviews
       const mockContribution: Contribution = {
@@ -254,10 +252,13 @@ export const ContributionForm = ({
 
   // Initialize original changes when component mounts
   useEffect(() => {
-    if (changeSet.changes && changeSet.changes.length > 0) {
+    if (
+      contribuition.changeSet.changes &&
+      contribuition.changeSet.changes.length > 0
+    ) {
       setOriginalChanges(changeSet.changes);
     }
-  }, [changeSet.changes]);
+  }, [contribuition.changeSet.changes, changeSet.changes]);
 
   useEffect(() => {
     contributeForm.setFieldsValue({
@@ -267,151 +268,63 @@ export const ContributionForm = ({
     });
   }, [changeSet.title, changeSet.comments, contributeForm]);
 
+  // Review mode handlers
   const handleStartReview = useCallback(() => {
-    console.log('Starting review mode');
-
-    // Save the current state as the baseline (before review)
-    setPreReviewState({ ...changeSet });
-
-    // Store the original changes
-    if (originalChanges.length === 0 && changeSet.changes.length > 0) {
-      setOriginalChanges(changeSet.changes);
-    }
-
-    // Switch to review mode
+    setPreReviewState(contribuition);
     setIsReviewMode(true);
-
-    // Clear review changes to start fresh
     setReviewChanges([]);
-
-    // Create a new review object
-    const newReview: Review = {
-      changeSet: {
-        id: `review-${Date.now()}`,
-        author: 'Editor', // TODO: Get from current user
-        title: `Review for ${changeSet.title}`,
-        comments: '',
-        timestamp: Date.now(),
-        changes: [],
-      },
-      stackOrder: reviews.length + 1,
-    };
-    setCurrentReview(newReview);
-
-    // Clear the current changeSet to start with empty review changes
-    onChange({
-      ...changeSet,
-      changes: [],
-    });
-
     if (onStartReview) {
       onStartReview();
     }
-
-    message.info('Review mode activated. Your changes will be stacked on top.');
-  }, [
-    changeSet,
-    originalChanges.length,
-    reviews.length,
-    onChange,
-    onStartReview,
-  ]);
+  }, [contribuition, onStartReview]);
 
   const handleCommitReview = useCallback(() => {
-    if (!currentReview) return;
+    if (reviewChanges.length === 0) {
+      message.warning('No changes to commit');
+      return;
+    }
 
-    Modal.confirm({
-      title: 'Submit Review',
-      content: (
-        <div>
-          <p>Are you sure you want to submit this review?</p>
-          <p>
-            This will save your {reviewChanges.length} change(s) permanently.
-          </p>
-        </div>
-      ),
-      okText: 'Submit Review',
-      cancelText: 'Cancel',
-      onOk: () => {
-        const reviewWithChanges: Review = {
-          ...currentReview,
-          changeSet: {
-            ...currentReview.changeSet,
-            changes: reviewChanges,
-            comments:
-              contributeForm.getFieldValue('comments') ||
-              currentReview.changeSet.comments,
-            timestamp: Date.now(),
-          },
-        };
-
-        if (onCommitReview) {
-          onCommitReview(reviewWithChanges);
-        }
-
-        // Merge review changes into the main changeSet
-        const updatedChanges = [...originalChanges, ...reviewChanges];
-        onChange({
-          ...changeSet,
-          changes: updatedChanges,
-        });
-
-        // Exit review mode
-        setIsReviewMode(false);
-        setCurrentReview(null);
-        setReviewChanges([]);
-        setPreReviewState(null);
-
-        message.success('Review submitted successfully');
+    const comments = contributeForm.getFieldValue('comments') || '';
+    const review: Review = {
+      changeSet: {
+        id: `changeset-${Date.now()}`,
+        author: 'current-user',
+        title: changeSet.title || '',
+        comments: comments,
+        timestamp: new Date().toISOString() as unknown as number,
+        changes: reviewChanges,
       },
-    });
-  }, [
-    currentReview,
-    reviewChanges,
-    contributeForm,
-    onCommitReview,
-    changeSet,
-    originalChanges,
-    onChange,
-  ]);
+      stackOrder: 1,
+    };
+
+    if (onCommitReview) {
+      onCommitReview(review);
+    }
+
+    setIsReviewMode(false);
+    setReviewChanges([]);
+    setPreReviewState(null);
+    message.success('Review committed successfully');
+  }, [reviewChanges, changeSet.title, contributeForm, onCommitReview]);
 
   const handleCancelReview = useCallback(() => {
     Modal.confirm({
       title: 'Cancel Review',
       content:
-        'Are you sure you want to cancel this review? All changes will be discarded.',
-      okText: 'Cancel Review',
-      cancelText: 'Continue Editing',
-      okButtonProps: { danger: true },
+        'Are you sure you want to cancel? All review changes will be lost.',
       onOk: () => {
-        console.log('Review abandoned - reverting changes');
-
-        // Revert to the pre-review state
         if (preReviewState) {
           onChange(preReviewState);
-        } else if (originalChanges.length > 0) {
-          // Fallback: restore original changes
-          onChange({
-            ...changeSet,
-            changes: originalChanges,
-          });
         }
-
-        // Exit review mode
         setIsReviewMode(false);
-        setCurrentReview(null);
         setReviewChanges([]);
         setPreReviewState(null);
-
-        // Call parent handler to update mode in parent component
         if (onAbandonReview) {
           onAbandonReview();
         }
-
-        message.info('Review cancelled - changes discarded');
       },
     });
-  }, [preReviewState, originalChanges, changeSet, onChange, onAbandonReview]);
+  }, [preReviewState, onChange, onAbandonReview]);
 
   const handleEditorialDecisionSubmit = useCallback(() => {
     if (!selectedDecision || !onEditorialDecision) return;
@@ -434,29 +347,38 @@ export const ContributionForm = ({
       },
     });
   }, [selectedDecision, decisionComments, onEditorialDecision]);
-  
+
   const onChangesUpdate = useCallback(
     (newChange: EntityChange) => {
       // Reset save state when new changes are made
       setIsSaveChange(false);
-      
+
       if (isReviewMode) {
         const nextReviewChanges = addToChangeSet(reviewChanges, newChange);
         dropOrphans(nextReviewChanges);
         const combined = combineEntityChanges(nextReviewChanges);
         setReviewChanges(combined);
         onChange({
-          ...changeSet,
-          changes: combined,
+          ...contribuition,
+          changeSet: {
+            ...(contribuition.changeSet || changeSet),
+            changes: combined,
+          },
         });
       } else {
         const next = addToChangeSet(changeSet.changes, newChange);
         dropOrphans(next);
         const combined = combineEntityChanges(next);
-        onChange({ ...changeSet, changes: combined });
+        onChange({
+          ...contribuition,
+          changeSet: {
+            ...changeSet,
+            changes: combined,
+          },
+        });
       }
     },
-    [isReviewMode, reviewChanges, changeSet, onChange],
+    [contribuition, isReviewMode, reviewChanges, changeSet, onChange],
   );
 
   const handlePreviewChanges = useCallback(() => {
@@ -481,51 +403,52 @@ export const ContributionForm = ({
     entity,
   ]);
 
-
   const handleSaveChanges = async () => {
     setIsSaving(true);
     setIsSaveChange(false); // Reset while saving
-    console.log("changeSet.author", changeSet.author)
+    console.log('changeSet.author', changeSet.author);
     try {
       const formValues = await contributeForm.validateFields();
-      
+
       const changesToSubmit = isReviewMode ? reviewChanges : changeSet.changes;
-  
-      const payload: CreateContributionPayload = {
-        id: contributionId || changeSet.id,
+
+      const payload: Contribution = {
+        id: contributionId || '-1',
         root: entity.entityRef,
         changeSet: {
           title: formValues.title || changeSet.title,
           comments: formValues.comments || changeSet.comments || '',
           timestamp: Date.now(),
           changes: changesToSubmit,
-          author: changeSet.author || 'Unknown',
+          author: changeSet.author,
           id: changeSet.id,
         },
         status: ContributionStatus.WorkInProgress,
+        reviews: [],
+        media: [],
       };
-  
+
       const response = await createSaveChangeContribution(payload);
-  
+
       message.success('Changes saved successfully!');
       console.log('Save response:', response);
-      
-      setIsSaveChange(true); 
-      
+
+      setIsSaveChange(true);
+
       if (isReviewMode) {
         setReviewChanges([]);
         setIsReviewMode(false);
       } else {
         onChange({
-          ...response.changeSet,
+          ...response,
         });
       }
     } catch (error) {
       console.error('Validation or save failed:', error);
       message.error(
-        error instanceof Error 
-          ? error.message 
-          : 'Failed to save changes. Please check the form.'
+        error instanceof Error
+          ? error.message
+          : 'Failed to save changes. Please check the form.',
       );
     } finally {
       setIsSaving(false);
@@ -533,61 +456,62 @@ export const ContributionForm = ({
   };
 
   const handleSubmitChanges = async () => {
-  if (!isSaveChange) {
-    message.warning('Please save your changes before submitting');
-    return;
-  }
-
-  setIsSubmitting(true);
-  
-  try {
-    const formValues = contributeForm.getFieldsValue();
-    
-    const changesToSubmit = isReviewMode ? reviewChanges : changeSet.changes;
-
-    const payload: CreateContributionPayload = {
-      id: contributionId || changeSet.id,
-      root: entity.entityRef,
-      changeSet: {
-        title: formValues.title || changeSet.title,
-        comments: formValues.comments || changeSet.comments || '',
-        timestamp: Date.now(),
-        changes: changesToSubmit,
-        author: changeSet.author || 'Unknown',
-        id: changeSet.id,
-      },
-      status: ContributionStatus.Submitted, // Submit as Submitted
-    };
-
-    console.log('Submit Payload:', payload);
-
-    const response = await createSubmitChangeContribution(payload);
-
-    message.success('Contribution submitted successfully!');
-    console.log('Submit response:', response);
-    
-    // Reset states after successful submission
-    setIsSaveChange(false);
-    
-    if (isReviewMode) {
-      setReviewChanges([]);
-      setIsReviewMode(false);
-    } else {
-      onChange({
-        ...response.changeSet,
-      });
+    if (!isSaveChange) {
+      message.warning('Please save your changes before submitting');
+      return;
     }
-  } catch (error) {
-    console.error('Submission failed:', error);
-    message.error(
-      error instanceof Error 
-        ? error.message 
-        : 'Failed to submit contribution.'
-    );
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+
+    setIsSubmitting(true);
+    try {
+      const formValues = contributeForm.getFieldsValue();
+
+      const changesToSubmit = isReviewMode ? reviewChanges : changeSet.changes;
+
+      const payload: Contribution = {
+        id: contributionId || changeSet.id,
+        root: entity.entityRef,
+        changeSet: {
+          title: formValues.title || changeSet.title,
+          comments: formValues.comments || changeSet.comments || '',
+          timestamp: Date.now(),
+          changes: changesToSubmit,
+          author: changeSet.author,
+          id: changeSet.id,
+        },
+        status: ContributionStatus.Submitted,
+        reviews: [],
+        media: [],
+      };
+
+      console.log('Submit Payload:', payload);
+
+      const response = await createSubmitChangeContribution(payload);
+
+      message.success('Contribution submitted successfully!');
+      console.log('Submit response:', response);
+
+      // Reset states after successful submission
+      setIsSaveChange(false);
+
+      if (isReviewMode) {
+        setReviewChanges([]);
+        setIsReviewMode(false);
+      } else {
+        onChange({
+          ...response,
+        });
+      }
+    } catch (error) {
+      console.error('Submission failed:', error);
+      message.error(
+        error instanceof Error
+          ? error.message
+          : 'Failed to submit contribution.',
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const resetAllChanges = useCallback(() => {
     const title = isReviewMode ? 'Cancel review?' : 'Reset all changes?';
@@ -604,12 +528,24 @@ export const ContributionForm = ({
         if (isReviewMode) {
           handleCancelReview();
         } else {
-          onChange({ ...changeSet, changes: [] });
+          onChange({
+            ...contribuition,
+            changeSet: {
+              ...contribuition.changeSet,
+              changes: [],
+            },
+          });
           contributeForm.resetFields();
         }
       },
     });
-  }, [isReviewMode, handleCancelReview, changeSet, onChange, contributeForm]);
+  }, [
+    contribuition,
+    isReviewMode,
+    handleCancelReview,
+    onChange,
+    contributeForm,
+  ]);
 
   const toggleExpandAll = () => {
     const allKeys = sections?.map((section) => section.key as string) ?? [];
@@ -662,15 +598,24 @@ export const ContributionForm = ({
 
       if (isReviewMode) {
         setReviewChanges(updatedChanges);
-        onChange({ ...changeSet, changes: updatedChanges });
+        onChange({
+          ...contribuition,
+          changeSet: {
+            ...(contribuition.changeSet || changeSet),
+            changes: updatedChanges,
+          },
+        });
       } else {
         onChange({
-          ...changeSet,
-          changes: updatedChanges,
+          ...contribuition,
+          changeSet: {
+            ...changeSet,
+            changes: updatedChanges,
+          },
         });
       }
     },
-    [isReviewMode, reviewChanges, changeSet, onChange],
+    [contribuition, isReviewMode, reviewChanges, changeSet, onChange],
   );
 
   // Display the appropriate change count
@@ -691,7 +636,7 @@ export const ContributionForm = ({
       <Form
         form={contributeForm}
         layout="vertical"
-        onFinish={isSaveChange ? handleSaveChanges: handleSubmitChanges}
+        onFinish={isSaveChange ? handleSaveChanges : handleSubmitChanges}
         style={{
           ...ContributionSectionStyle,
           display: 'flex',
@@ -902,19 +847,21 @@ export const ContributionForm = ({
                 {displayedChanges.length !== 1 && 's'}
               </Text>
             </div>
-          {isSaveChange && !isReviewMode && (
-            <div style={{ 
-              marginTop: 8, 
-              padding: '8px 12px',
-              background: '#f6ffed',
-              border: '1px solid #b7eb8f',
-              borderRadius: '4px',
-              fontSize: '12px',
-              color: '#52c41a'
-            }}>
-              ✓ Changes saved. You can now submit your contribution.
-            </div>
-          )}
+            {isSaveChange && !isReviewMode && (
+              <div
+                style={{
+                  marginTop: 8,
+                  padding: '8px 12px',
+                  background: '#f6ffed',
+                  border: '1px solid #b7eb8f',
+                  borderRadius: '4px',
+                  fontSize: '12px',
+                  color: '#52c41a',
+                }}
+              >
+                ✓ Changes saved. You can now submit your contribution.
+              </div>
+            )}
             <div style={{ flex: 1, overflowY: 'auto', padding: 12 }}>
               <ChangesSummary
                 changes={displayedChanges}
