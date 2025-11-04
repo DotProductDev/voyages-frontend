@@ -137,7 +137,6 @@ export const ContributionForm = ({
   const { languageValue } = useSelector(
     (state: RootState) => state.getLanguages,
   );
-  console.log({ mode });
   const { user } = useSelector((state: RootState) => state.getAuthUserSlice);
   const translatedcontribute = translationLanguagesContribute(languageValue);
   const [contributeForm] = Form.useForm();

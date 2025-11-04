@@ -20,9 +20,11 @@ import {
 import { AgGridReact } from 'ag-grid-react';
 import { Button, Divider, Form, Input, Pagination, message } from 'antd';
 import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate, useParams } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 
 import { fetchContributionsDataByAuthor } from '@/fetch/contributeFetch/fetchContributionsData';
+import { usePageRouter } from '@/hooks/usePageRouter';
 import { useSearchEditRequestsFilters } from '@/hooks/useSearchEditRequestsFilters';
 import { loadUserFromStorage } from '@/redux/getAuthUserSlice';
 import { RootState } from '@/redux/store';
@@ -48,7 +50,10 @@ const NewVoyage: React.FC = ({
   entity: _entity = tempNewVoyage,
 }: NewVoyageProps) => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
   const { user } = useSelector((state: RootState) => state.getAuthUserSlice);
+  const { contributePath } = usePageRouter();
 
   useEffect(() => {
     dispatch(loadUserFromStorage());
@@ -61,7 +66,7 @@ const NewVoyage: React.FC = ({
   const gridRef = useRef<AgGridReact<TransformedContribution>>(null);
   const { newVoyagesFilters, buildNewVoyagesFilterQuery } =
     useSearchEditRequestsFilters(form, gridRef);
-  const [rowsPerPage, setRowsPerPage] = useState(15);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
   const [page, setPage] = useState(1);
   const [totalResultsCount, setTotalResultsCount] = useState(0);
 
@@ -74,6 +79,33 @@ const NewVoyage: React.FC = ({
     undefined,
   );
   const [formMode, setFormMode] = useState<ReviewMode>(ReviewMode.Create);
+
+  // Load contribution by ID when id param exists
+  useEffect(() => {
+    if (id && user?.email && contributions.length > 0) {
+      const contribution = contributions.find((c) => c.root?.id === id);
+
+      if (contribution) {
+        setSelectedContribution(contribution);
+        setFormMode(ReviewMode.Edit);
+
+        // Create entity from the contribution
+        if (
+          contribution.changeSet?.changes &&
+          contribution.changeSet.changes.length > 0
+        ) {
+          const schema = contribution.changeSet.changes[0].entityRef.schema;
+          const entityId = contribution.changeSet.changes[0].entityRef.id;
+          const entity = materializeNew(getSchema(schema), entityId);
+          setFormEntity(entity);
+        } else {
+          setFormEntity(tempNewVoyage);
+        }
+
+        setShowForm(true);
+      }
+    }
+  }, [id, user?.email, contributions]);
 
   const handlePageChange = useCallback(
     (newPage: number, pageSize?: number) => {
@@ -132,35 +164,39 @@ const NewVoyage: React.FC = ({
 
   // Handle row click - load contribution
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleRowClick = useCallback(({ data, event }: any) => {
-    if (!event || !data) return;
+  const handleRowClick = useCallback(
+    ({ data, event }: any) => {
+      if (!event || !data) return;
 
-    const target = event.target as HTMLElement;
-    const cellElement = target.closest('.ag-cell');
-    const colId = cellElement?.getAttribute('col-id');
-    const disabledColumns = ['status', 'ag-Grid-SelectionColumn'];
+      const target = event.target as HTMLElement;
+      const cellElement = target.closest('.ag-cell');
+      const colId = cellElement?.getAttribute('col-id');
+      const disabledColumns = ['status', 'ag-Grid-SelectionColumn'];
 
-    if (colId && disabledColumns.includes(colId)) {
-      return;
-    }
+      if (colId && disabledColumns.includes(colId)) {
+        return;
+      }
 
-    // Set the selected contribution
-    setSelectedContribution(data);
-    setFormMode(ReviewMode.Edit);
+      // Set the selected contribution
+      setSelectedContribution(data);
+      setFormMode(ReviewMode.Edit);
 
-    // Create entity from the contribution
-    if (data.changeSet?.changes && data.changeSet.changes.length > 0) {
-      const schema = data.changeSet.changes[0].entityRef.schema;
-      const entityId = data.changeSet.changes[0].entityRef.id;
-      const entity = materializeNew(getSchema(schema), entityId);
-      setFormEntity(entity);
-    } else {
-      // Fallback to default entity
-      setFormEntity(tempNewVoyage);
-    }
+      // Create entity from the contribution
+      if (data.changeSet?.changes && data.changeSet.changes.length > 0) {
+        const schema = data.changeSet.changes[0].entityRef.schema;
+        const entityId = data.changeSet.changes[0].entityRef.id;
+        const entity = materializeNew(getSchema(schema), entityId);
+        setFormEntity(entity);
+      } else {
+        // Fallback to default entity
+        setFormEntity(tempNewVoyage);
+      }
 
-    setShowForm(true);
-  }, []);
+      setShowForm(true);
+      navigate(`/contribute/interim/new/${data?.root?.id}`);
+    },
+    [navigate],
+  );
 
   // Handle new voyage button click
   const handleNewVoyageClick = useCallback(() => {
@@ -192,9 +228,9 @@ const NewVoyage: React.FC = ({
     setShowForm(false);
     setSelectedContribution(undefined);
     setFormEntity(undefined);
-    // Refresh contributions when going back
     fetchContributions();
-  }, [fetchContributions]);
+    navigate('/contribute/interim/new/', { replace: true });
+  }, [fetchContributions, navigate]);
 
   // Handle contribution form change
   const handleContributionChange = useCallback(
@@ -228,7 +264,6 @@ const NewVoyage: React.FC = ({
     showForm,
     fetchContributions,
   ]);
-
   // Show form view
   if (showForm && formEntity && selectedContribution) {
     return (
@@ -288,82 +323,94 @@ const NewVoyage: React.FC = ({
   // Show table view
   return (
     <div className="contribute-content">
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '16px',
-        }}
-      >
-        <h1 className="page-title-1" style={{ margin: 0 }}>
-          New Voyage
-        </h1>
-        <Button type="primary" onClick={handleNewVoyageClick}>
-          + New Voyage
-        </Button>
-      </div>
-      <p>
-        Variables are organized into eight categories. Complete as many boxes in
-        each category as your source(s) allow. Comments or notes on any entry
-        may be added by clicking on the comment icon to the right of each input
-        box. Should you wish to add a port or region that does not appear in the
-        drop-down menu, please let the editors know via the note box at the foot
-        of the entry form. If required, use this box for any additional
-        information. You can review your complete entry at any time by clicking
-        on the &apos;Review&apos; button. To submit your entry you must move to
-        the Review page first.
-      </p>
-      <div
-        className="ag-theme-alpine compact-table"
-        style={{
-          height: 'calc(60vh - 280px)',
-          width: 'calc(100vw - 120px)',
-          border: '1px solid #d9d9d9',
-          borderRadius: '12px',
-          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.05)',
-        }}
-      >
-        <AgGridReact<TransformedContribution>
-          theme="legacy"
-          ref={gridRef}
-          rowData={contributions}
-          columnDefs={columnDefs}
-          defaultColDef={defaultColDef}
-          getRowStyle={getRowRowStyle}
-          enableBrowserTooltips={true}
-          paginationPageSize={rowsPerPage}
-          onRowClicked={handleRowClick}
-          pagination={true}
-          suppressPaginationPanel={true}
-          getRowClass={(params) =>
-            params.rowIndex % 2 === 0 ? 'even-row' : 'odd-row'
-          }
-          headerHeight={36}
-          suppressHorizontalScroll={false}
-        />
-      </div>
-      <div
-        style={{
-          marginTop: '16px',
-          display: 'flex',
-          justifyContent: 'flex-end',
-        }}
-      >
-        <Pagination
-          current={page}
-          total={totalResultsCount}
-          pageSize={rowsPerPage}
-          showSizeChanger
-          showTotal={(total, range) =>
-            `Showing ${range[0]}-${range[1]} of ${total} contributions`
-          }
-          pageSizeOptions={['5', '10', '20', '50', '100']}
-          onChange={handlePageChange}
-          onShowSizeChange={handlePageChange}
-          style={{ margin: 0 }}
-        />
-      </div>
+      {contributePath === 'interim' && (
+        <>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '16px',
+            }}
+          >
+            <h1 className="page-title-1" style={{ margin: 0 }}>
+              New Voyage
+            </h1>
+            <Button
+              type="primary"
+              onClick={handleNewVoyageClick}
+              className="new-voyage-button"
+            >
+              + New Voyage
+            </Button>
+          </div>
+          <p>
+            Variables are organized into eight categories. Complete as many
+            boxes in each category as your source(s) allow. Comments or notes on
+            any entry may be added by clicking on the comment icon to the right
+            of each input box. Should you wish to add a port or region that does
+            not appear in the drop-down menu, please let the editors know via
+            the note box at the foot of the entry form. If required, use this
+            box for any additional information. You can review your complete
+            entry at any time by clicking on the &apos;Review&apos; button. To
+            submit your entry you must move to the Review page first.
+          </p>
+        </>
+      )}
+      {contributions.length > 0 && (
+        <>
+          <div
+            className="ag-theme-alpine compact-table"
+            style={{
+              height: 'calc(60vh - 280px)',
+              width: 'calc(100vw - 120px)',
+              border: '1px solid #d9d9d9',
+              borderRadius: '12px',
+              boxShadow: '0 4px 6px rgba(0, 0, 0, 0.05)',
+            }}
+          >
+            <AgGridReact<TransformedContribution>
+              theme="legacy"
+              ref={gridRef}
+              rowData={contributions}
+              columnDefs={columnDefs}
+              defaultColDef={defaultColDef}
+              getRowStyle={getRowRowStyle}
+              enableBrowserTooltips={true}
+              paginationPageSize={rowsPerPage}
+              onRowClicked={handleRowClick}
+              pagination={true}
+              suppressPaginationPanel={true}
+              getRowClass={(params) =>
+                params.rowIndex % 2 === 0 ? 'even-row' : 'odd-row'
+              }
+              headerHeight={36}
+              suppressHorizontalScroll={false}
+            />
+          </div>
+          <div
+            style={{
+              marginTop: '16px',
+              display: 'flex',
+              justifyContent: 'flex-end',
+            }}
+          >
+            <Pagination
+              current={page}
+              total={totalResultsCount}
+              pageSize={rowsPerPage}
+              showSizeChanger
+              showTotal={(total, range) =>
+                `Showing ${range[0]}-${range[1]} of ${total} contributions`
+              }
+              pageSizeOptions={['5', '10', '20', '50', '100']}
+              onChange={handlePageChange}
+              onShowSizeChange={handlePageChange}
+              style={{ margin: 0 }}
+            />
+          </div>
+        </>
+      )}
     </div>
   );
 };
