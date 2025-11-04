@@ -64,6 +64,10 @@ export const ContributionSectionStyle: CSSProperties = {
   height: 'calc(100vh - 160px)',
   scrollSnapAlign: 'start',
 };
+export const ContributionSectionStyleCreate: CSSProperties = {
+  height: 'calc(100vh - 500px)',
+  scrollSnapAlign: 'start',
+};
 
 function combineOwnedChanges(changes: PropertyChange[]): PropertyChange[] {
   const seen: Record<string, PropertyChange> = {};
@@ -133,6 +137,8 @@ export const ContributionForm = ({
   const { languageValue } = useSelector(
     (state: RootState) => state.getLanguages,
   );
+  console.log({ mode });
+  const { user } = useSelector((state: RootState) => state.getAuthUserSlice);
   const translatedcontribute = translationLanguagesContribute(languageValue);
   const [contributeForm] = Form.useForm();
   const schema = getSchema(entity.entityRef.schema);
@@ -162,6 +168,7 @@ export const ContributionForm = ({
   const [preReviewState, setPreReviewState] = useState<Contribution | null>(
     null,
   );
+  const [changeSetId, setChangeSetId] = useState<string>('');
 
   useEffect(() => {
     setIsReviewMode(mode === ReviewMode.Review);
@@ -258,7 +265,7 @@ export const ContributionForm = ({
     ) {
       setOriginalChanges(changeSet.changes);
     }
-  }, [contribuition.changeSet.changes, changeSet.changes]);
+  }, [contribuition?.changeSet.changes, changeSet?.changes]);
 
   useEffect(() => {
     contributeForm.setFieldsValue({
@@ -406,7 +413,6 @@ export const ContributionForm = ({
   const handleSaveChanges = async () => {
     setIsSaving(true);
     setIsSaveChange(false); // Reset while saving
-    console.log('changeSet.author', changeSet.author);
     try {
       const formValues = await contributeForm.validateFields();
 
@@ -420,8 +426,8 @@ export const ContributionForm = ({
           comments: formValues.comments || changeSet.comments || '',
           timestamp: Date.now(),
           changes: changesToSubmit,
-          author: changeSet.author,
-          id: changeSet.id,
+          author: changeSet.author || user?.email,
+          id: changeSetId || changeSet.id,
         },
         status: ContributionStatus.WorkInProgress,
         reviews: [],
@@ -434,7 +440,7 @@ export const ContributionForm = ({
       console.log('Save response:', response);
 
       setIsSaveChange(true);
-
+      setChangeSetId(response.changeSet.id);
       if (isReviewMode) {
         setReviewChanges([]);
         setIsReviewMode(false);
@@ -629,7 +635,10 @@ export const ContributionForm = ({
     ContributionStatus.Submitted,
     ContributionStatus.WorkInProgress,
   ].includes(currentStatus!);
-
+  const contributionSection =
+    mode === ReviewMode.Create
+      ? ContributionSectionStyleCreate
+      : ContributionSectionStyle;
   return (
     <>
       {title && <h1 className="page-title-1">{title}</h1>}
@@ -638,7 +647,7 @@ export const ContributionForm = ({
         layout="vertical"
         onFinish={isSaveChange ? handleSaveChanges : handleSubmitChanges}
         style={{
-          ...ContributionSectionStyle,
+          ...contributionSection,
           display: 'flex',
           flexDirection: 'column',
           padding: 0,

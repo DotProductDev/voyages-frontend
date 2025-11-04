@@ -33,9 +33,9 @@ interface ChangesSummaryProps {
   onCommitReview?: () => void;
   readOnly?: boolean;
   currentStatus?: number;
-  isSaveChange?: boolean
-  isSaving?: boolean
-  isSubmitting?: boolean
+  isSaveChange?: boolean;
+  isSaving?: boolean;
+  isSubmitting?: boolean;
 }
 
 const ChangesSummary = ({
@@ -48,12 +48,10 @@ const ChangesSummary = ({
   isReviewMode = false,
   onCommitReview,
   readOnly = false,
-  currentStatus,
-  isSaveChange = false,     
-  isSaving = false,         
-  isSubmitting = false, 
+  isSaveChange = false,
+  isSaving = false,
+  isSubmitting = false,
 }: ChangesSummaryProps) => {
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <div style={{ flex: 1, overflowY: 'auto' }}>
@@ -116,10 +114,10 @@ const ChangesSummary = ({
               }
               disabled={changes.length === 0}
             >
-              {isSaving 
-                ? 'Saving...' 
-                : isReviewMode 
-                  ? 'Commit Review' 
+              {isSaving
+                ? 'Saving...'
+                : isReviewMode
+                  ? 'Commit Review'
                   : 'Save Changes'}
             </Button>
             <Button
