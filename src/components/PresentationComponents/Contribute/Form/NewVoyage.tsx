@@ -20,7 +20,7 @@ import {
 import { AgGridReact } from 'ag-grid-react';
 import { Button, Divider, Form, Input, Pagination, message } from 'antd';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 
 import { fetchContributionsDataByAuthor } from '@/fetch/contributeFetch/fetchContributionsData';
@@ -51,6 +51,7 @@ const NewVoyage: React.FC = ({
 }: NewVoyageProps) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
   const { id } = useParams<{ id: string }>();
   const { user } = useSelector((state: RootState) => state.getAuthUserSlice);
   const { contributePath } = usePageRouter();
@@ -69,7 +70,6 @@ const NewVoyage: React.FC = ({
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [page, setPage] = useState(1);
   const [totalResultsCount, setTotalResultsCount] = useState(0);
-
   // State for showing form vs table
   const [showForm, setShowForm] = useState(false);
   const [selectedContribution, setSelectedContribution] = useState<
@@ -79,16 +79,17 @@ const NewVoyage: React.FC = ({
     undefined,
   );
   const [formMode, setFormMode] = useState<ReviewMode>(ReviewMode.Create);
+  const [contributionId, setContributionId] = useState<string | undefined>('');
 
   // Load contribution by ID when id param exists
+
   useEffect(() => {
     if (id && user?.email && contributions.length > 0) {
-      const contribution = contributions.find((c) => c.root?.id === id);
-
+      const contribution = contributions.find((c) => c.voyage_id === id);
       if (contribution) {
         setSelectedContribution(contribution);
         setFormMode(ReviewMode.Edit);
-
+        setContributionId(id);
         // Create entity from the contribution
         if (
           contribution.changeSet?.changes &&
@@ -162,8 +163,25 @@ const NewVoyage: React.FC = ({
     }
   }, [buildNewVoyagesFilterQuery, user?.email]);
 
-  // Handle row click - load contribution
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  useEffect(() => {
+    const state = location.state as { reload?: boolean; timestamp?: number };
+    if (state?.reload) {
+      // Reset form state
+      setShowForm(false);
+      setSelectedContribution(undefined);
+      setFormEntity(undefined);
+      setContributionId('');
+
+      // Fetch fresh data
+      if (user?.email) {
+        fetchContributions();
+      }
+
+      // Clear the state to prevent repeated reloads
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location, navigate, user?.email, fetchContributions]);
+
   const handleRowClick = useCallback(
     ({ data, event }: any) => {
       if (!event || !data) return;
@@ -191,9 +209,8 @@ const NewVoyage: React.FC = ({
         // Fallback to default entity
         setFormEntity(tempNewVoyage);
       }
-
       setShowForm(true);
-      navigate(`/contribute/interim/new/${data?.root?.id}`);
+      navigate(`/contribute/interim/new/${data?.voyage_id}`);
     },
     [navigate],
   );
@@ -201,8 +218,9 @@ const NewVoyage: React.FC = ({
   // Handle new voyage button click
   const handleNewVoyageClick = useCallback(() => {
     const newEntity = materializeNew(VoyageSchema, uuidv4());
+
     const newContribution: Contribution = {
-      id: '-1',
+      id: String(newEntity.entityRef.id),
       root: newEntity.entityRef,
       changeSet: {
         id: uuidv4(),
@@ -216,7 +234,7 @@ const NewVoyage: React.FC = ({
       reviews: [],
       media: [],
     };
-
+    setContributionId(String(newEntity.entityRef.id));
     setFormEntity(newEntity);
     setSelectedContribution(newContribution);
     setFormMode(ReviewMode.Create);
@@ -264,7 +282,7 @@ const NewVoyage: React.FC = ({
     showForm,
     fetchContributions,
   ]);
-  // Show form view
+
   if (showForm && formEntity && selectedContribution) {
     return (
       <>
@@ -304,11 +322,7 @@ const NewVoyage: React.FC = ({
             contribuition={selectedContribution}
             onChange={handleContributionChange}
             mode={formMode}
-            contributionId={
-              formMode === ReviewMode.Edit && selectedContribution?.id !== '-1'
-                ? selectedContribution.id
-                : undefined
-            }
+            contributionId={contributionId}
             currentStatus={
               formMode === ReviewMode.Edit
                 ? selectedContribution?.status

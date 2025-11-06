@@ -21,7 +21,6 @@ import {
   PropertyChange,
   ContributionStatus,
   Review,
-  combineContributionChanges,
   Contribution,
 } from '@dotproductdev/voyages-contribute';
 import {
@@ -38,6 +37,7 @@ import {
   message,
 } from 'antd';
 import { useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 
 import { createSaveChangeContribution } from '@/fetch/contributeFetch/createSaveChangeContribution';
 import { createSubmitChangeContribution } from '@/fetch/contributeFetch/createSubmitChangeContribution';
@@ -132,6 +132,7 @@ export const ContributionForm = ({
   onEditorialDecision,
   title,
 }: ContributionFormProps) => {
+  const navigate = useNavigate();
   const { reviews, changeSet } = contribuition;
   const { contributePath } = usePageRouter();
   const { languageValue } = useSelector(
@@ -162,7 +163,6 @@ export const ContributionForm = ({
 
   // Track review mode and changes
   const [isReviewMode, setIsReviewMode] = useState(mode === ReviewMode.Review);
-  const [originalChanges, setOriginalChanges] = useState<EntityChange[]>([]);
   const [reviewChanges, setReviewChanges] = useState<EntityChange[]>([]);
   const [preReviewState, setPreReviewState] = useState<Contribution | null>(
     null,
@@ -182,50 +182,41 @@ export const ContributionForm = ({
     }
 
     try {
-      // Create a mock contribution with all reviews
-      const mockContribution: Contribution = {
-        id: contributionId,
-        root: entity.entityRef,
-        changeSet: changeSet,
-        status: currentStatus || ContributionStatus.WorkInProgress,
-        reviews: reviews,
-        media: [],
-      };
-
-      // Get the combined changeset from the library
-      const combinedChangeSet = combineContributionChanges(mockContribution);
-
-      // Convert the combined changeset back to EntityChange format
-      const allChanges: EntityChange[] = [
-        ...combinedChangeSet.deletions,
-        ...combinedChangeSet.updates,
-      ];
-
-      // Clone the entity
+      // Clone the entity first
       const stackedEntityClone = cloneEntity(entity);
 
       // Expand the entity to ensure all nested structures are available
       const expandedEntity = expandMaterialized(stackedEntityClone);
 
-      // Apply all changes from the combined changeset
-      applyChanges(expandedEntity, allChanges);
+      // Build the changes in the correct order:
+      // 1. Start with original contribution changes
+      let allChanges: EntityChange[] = [...changeSet.changes];
 
-      // Then apply changes in stacking order:
-      // 1. Apply original contribution changes
-      if (originalChanges.length > 0) {
-        applyChanges(expandedEntity, originalChanges);
-      }
-
-      // 2. Apply each committed review's changes
+      // 2. Add each committed review's changes
       reviews.forEach((review) => {
         if (review.changeSet.changes && review.changeSet.changes.length > 0) {
-          applyChanges(expandedEntity, review.changeSet.changes);
+          allChanges = [...allChanges, ...review.changeSet.changes];
         }
       });
 
-      // 3. Apply current review changes (if in review mode)
+      // 3. Add current review changes (if in review mode)
       if (isReviewMode && reviewChanges.length > 0) {
-        applyChanges(expandedEntity, reviewChanges);
+        allChanges = [...allChanges, ...reviewChanges];
+      }
+
+      // Apply all changes at once
+      if (allChanges.length > 0) {
+        try {
+          applyChanges(expandedEntity, allChanges);
+        } catch (applyError) {
+          console.error('Error applying changes:', applyError);
+          console.error(
+            'Changes that failed:',
+            JSON.stringify(allChanges, null, 2),
+          );
+          // Return the original entity if changes fail to apply
+          return entity;
+        }
       }
 
       return stackedEntityClone;
@@ -233,16 +224,7 @@ export const ContributionForm = ({
       console.error('Error computing stacked entity:', error);
       return entity;
     }
-  }, [
-    changeSet,
-    currentStatus,
-    contributionId,
-    entity,
-    originalChanges,
-    reviews,
-    isReviewMode,
-    reviewChanges,
-  ]);
+  }, [changeSet, contributionId, entity, reviews, isReviewMode, reviewChanges]);
 
   const accessLevelOptions = Object.entries(PropertyAccessLevel)
     .filter(
@@ -255,16 +237,6 @@ export const ContributionForm = ({
       label: label.replace(/([A-Z])/g, ' $1').trim(),
       value,
     }));
-
-  // Initialize original changes when component mounts
-  useEffect(() => {
-    if (
-      contribuition.changeSet.changes &&
-      contribuition.changeSet.changes.length > 0
-    ) {
-      setOriginalChanges(changeSet.changes);
-    }
-  }, [contribuition?.changeSet.changes, changeSet?.changes]);
 
   useEffect(() => {
     contributeForm.setFieldsValue({
@@ -390,8 +362,6 @@ export const ContributionForm = ({
   const handlePreviewChanges = useCallback(() => {
     const formValues = contributeForm.getFieldsValue();
     console.log('Form Values:', formValues);
-    console.log('ChangeSet:', changeSet);
-
     const changesToApply = isReviewMode ? reviewChanges : changeSet.changes;
     const combined = combineChanges(changesToApply);
     console.log('Flattened change set:', combined);
@@ -399,7 +369,6 @@ export const ContributionForm = ({
     const updated = cloneEntity(isReviewMode ? stackedEntity : entity);
     applyChanges(expandMaterialized(updated), changesToApply);
     setPreviewEntity(updated);
-    console.log('Entity after applying changes:', updated);
   }, [
     contributeForm,
     changeSet,
@@ -416,9 +385,8 @@ export const ContributionForm = ({
       const formValues = await contributeForm.validateFields();
 
       const changesToSubmit = isReviewMode ? reviewChanges : changeSet.changes;
-
       const payload: Contribution = {
-        id: contributionId || '-1',
+        id: contributionId!,
         root: entity.entityRef,
         changeSet: {
           title: formValues.title || changeSet.title,
@@ -426,18 +394,16 @@ export const ContributionForm = ({
           timestamp: Date.now(),
           changes: changesToSubmit,
           author: changeSet.author || user?.email,
-          id: changeSetId || changeSet.id,
+          id: changeSetId,
         },
         status: ContributionStatus.WorkInProgress,
         reviews: [],
         media: [],
       };
 
-      const response = await createSaveChangeContribution(payload);
+      const response = await createSaveChangeContribution(payload, user.email);
 
       message.success('Changes saved successfully!');
-      console.log('Save response:', response);
-
       setIsSaveChange(true);
       setChangeSetId(response.changeSet.id);
       if (isReviewMode) {
@@ -461,43 +427,38 @@ export const ContributionForm = ({
   };
 
   const handleSubmitChanges = async () => {
-    if (!isSaveChange) {
-      message.warning('Please save your changes before submitting');
-      return;
-    }
-
     setIsSubmitting(true);
     try {
       const formValues = contributeForm.getFieldsValue();
 
       const changesToSubmit = isReviewMode ? reviewChanges : changeSet.changes;
-
       const payload: Contribution = {
-        id: contributionId || changeSet.id,
+        id: contributionId!,
         root: entity.entityRef,
         changeSet: {
           title: formValues.title || changeSet.title,
           comments: formValues.comments || changeSet.comments || '',
           timestamp: Date.now(),
           changes: changesToSubmit,
-          author: changeSet.author,
-          id: changeSet.id,
+          author: changeSet.author || user?.email,
+          id: changeSetId,
         },
         status: ContributionStatus.Submitted,
         reviews: [],
         media: [],
       };
 
-      console.log('Submit Payload:', payload);
-
-      const response = await createSubmitChangeContribution(payload);
+      const response = await createSubmitChangeContribution(
+        payload,
+        user.email,
+      );
 
       message.success('Contribution submitted successfully!');
-      console.log('Submit response:', response);
-
-      // Reset states after successful submission
       setIsSaveChange(false);
-
+      navigate('/contribute/interim/new/', {
+        replace: true,
+        state: { reload: true, timestamp: Date.now() },
+      });
       if (isReviewMode) {
         setReviewChanges([]);
         setIsReviewMode(false);
@@ -625,6 +586,7 @@ export const ContributionForm = ({
 
   // Display the appropriate change count
   const displayedChanges = isReviewMode ? reviewChanges : changeSet.changes;
+
   const isShowStartReview =
     mode === ReviewMode.ReadOnly &&
     !isReviewMode &&
@@ -886,6 +848,7 @@ export const ContributionForm = ({
                 isSaveChange={isSaveChange}
                 isSaving={isSaving}
                 isSubmitting={isSubmitting}
+                mode={mode}
               />
             </div>
           </Card>

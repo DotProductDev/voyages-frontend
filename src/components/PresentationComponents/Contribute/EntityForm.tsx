@@ -156,7 +156,6 @@ export const EntityForm = ({
 
 const addLabel = (item: ReactNode, label: string, schema: string) => {
   const isVoyageSparseDate = schema === 'VoyageSparseDate';
-
   if (isVoyageSparseDate) {
     // For date fields, use a more compact layout with better alignment
     return (

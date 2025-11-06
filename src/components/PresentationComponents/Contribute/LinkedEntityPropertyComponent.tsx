@@ -1,3 +1,4 @@
+/* eslint-disable indent */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import {
@@ -70,51 +71,42 @@ export const LinkedEntityPropertyComponent = (
   const { property, entity, lastChange, onChange, readOnly = false } = props;
   const [comments, setComments] = useState<string | undefined>();
   const { uid, mode, label, linkedEntitySchema } = property;
-  
+
+  // Call all hooks before any conditional returns (Rules of Hooks)
+  const linkedSchema = getSchema(linkedEntitySchema);
+  const { items: optionItems } = useSchemaEnumeration(linkedEntitySchema);
+  const debouncedLastChange = useDebounce(lastChange, 800);
+
   const value = lastChange
     ? lastChange.changed
     : (entity.data[label] as MaterializedEntity | null);
-    
-  if (value && !isMaterializedEntity(value)) {
-    return <span>BUG: Expected an entity reference value!</span>;
-  }
-  
-  if (mode === EntityLinkEditMode.View) {
-    return <span>{value?.entityRef.id ?? 'null'}</span>;
-  }
-  
-  if (mode === EntityLinkEditMode.Own) {
-    return <LinkedEntityOwnedPropertyComponent {...props} />;
-  }
-  
-  const linkedSchema = getSchema(linkedEntitySchema);
-  const { items: optionItems } = useSchemaEnumeration(linkedEntitySchema);
-
-  const debouncedLastChange = useDebounce(lastChange, 800);
 
   const options = useMemo(() => {
     const res = optionItems.map((entity) => {
       const labelText = linkedSchema.getLabel(entity.data, true);
       const cleanText = stripHtmlTags(labelText);
       return {
-        label: labelText, 
+        label: labelText,
         value: entity.entityRef.id,
         entity,
-        searchText: cleanText, 
+        searchText: cleanText,
       };
     });
 
     // Handle new entities from debounced changes
-    if (debouncedLastChange?.changed?.entityRef.type === 'new') {
+    if (debouncedLastChange?.changed?.entityRef?.type === 'new') {
       const updatedLinkedEntity = debouncedLastChange.linkedChanges
         ? applyUpdate(
             cloneEntity(debouncedLastChange.changed),
             debouncedLastChange.linkedChanges,
           )
         : debouncedLastChange.changed;
-        
-      const newLabelText = linkedSchema.getLabel(updatedLinkedEntity.data, true);
-      
+
+      const newLabelText = linkedSchema.getLabel(
+        updatedLinkedEntity.data,
+        true,
+      );
+
       res.push({
         label: newLabelText,
         value: debouncedLastChange.changed.entityRef.id,
@@ -122,7 +114,7 @@ export const LinkedEntityPropertyComponent = (
         searchText: stripHtmlTags(newLabelText),
       });
     }
-    
+
     return res;
   }, [optionItems, linkedSchema, debouncedLastChange]);
 
@@ -134,11 +126,11 @@ export const LinkedEntityPropertyComponent = (
       if (item === currentId && comments === lastChange?.comments) {
         return;
       }
-      
+
       const matchedOption = options.find(
         (x) => String(x.value) === String(item),
       );
-      
+
       if (!matchedOption) {
         console.warn('No matching option found for item:', item);
         return;
@@ -168,7 +160,6 @@ export const LinkedEntityPropertyComponent = (
     [
       onChange,
       entity,
-      property,
       comments,
       lastChange,
       value,
@@ -207,6 +198,19 @@ export const LinkedEntityPropertyComponent = (
     [options],
   );
 
+  // Early returns after all hooks have been called
+  if (value && !isMaterializedEntity(value)) {
+    return <span>BUG: Expected an entity reference value!</span>;
+  }
+
+  if (mode === EntityLinkEditMode.View) {
+    return <span>{value?.entityRef.id ?? 'null'}</span>;
+  }
+
+  if (mode === EntityLinkEditMode.Own) {
+    return <LinkedEntityOwnedPropertyComponent {...props} />;
+  }
+
   let displaySelected;
 
   if (property.linkedEntitySchema === 'Location') {
@@ -232,15 +236,18 @@ export const LinkedEntityPropertyComponent = (
         disabled={readOnly}
         popupMatchSelectWidth={false}
         styles={{
-          popup:{
-            root:{  maxHeight: 400,
-              overflow: 'auto',
-              zIndex: 9999,}
-          }
+          popup: {
+            root: { maxHeight: 400, overflow: 'auto', zIndex: 9999 },
+          },
         }}
         optionLabelProp="label"
-        filterOption={readOnly ? undefined : (input: string, option: any) =>
-          (option?.searchText ?? '').toLowerCase().includes(input.toLowerCase())
+        filterOption={
+          readOnly
+            ? undefined
+            : (input: string, option: any) =>
+                (option?.searchText ?? '')
+                  .toLowerCase()
+                  .includes(input.toLowerCase())
         }
       />
     );

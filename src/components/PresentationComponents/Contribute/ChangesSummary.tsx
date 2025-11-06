@@ -12,6 +12,7 @@ import {
 import { Preview } from '@mui/icons-material';
 import { Button, Typography, Timeline, Space } from 'antd';
 
+import { ReviewMode } from './ContributionForm';
 import PropertyChangesList from './PropertyChangesList';
 const { Text } = Typography;
 
@@ -36,10 +37,12 @@ interface ChangesSummaryProps {
   isSaveChange?: boolean;
   isSaving?: boolean;
   isSubmitting?: boolean;
+  mode?: ReviewMode;
 }
 
 const ChangesSummary = ({
   changes,
+  mode,
   resetAllChanges,
   handlePreview,
   submitChanges,
@@ -52,6 +55,8 @@ const ChangesSummary = ({
   isSaving = false,
   isSubmitting = false,
 }: ChangesSummaryProps) => {
+  const isDisableSubmitChange =
+    (isSaveChange && mode === ReviewMode.Create) || mode === ReviewMode.Edit;
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <div style={{ flex: 1, overflowY: 'auto' }}>
@@ -134,7 +139,7 @@ const ChangesSummary = ({
                 type="primary"
                 onClick={submitChanges}
                 block
-                disabled={!isSaveChange || submitChanges === undefined}
+                disabled={!isDisableSubmitChange}
                 loading={isSubmitting}
               >
                 {isSubmitting ? 'Submitting...' : 'Submit Changes'}
