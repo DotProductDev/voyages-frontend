@@ -35,7 +35,7 @@ const PageNotFound404: React.FC = () => {
       <Button
         variant="contained"
         onClick={() => navigate('/')}
-        sx={{ px: 4, py: 1.5, borderRadius: 2 }}
+        sx={{ px: 4, py: 2, borderRadius: 2 }}
       >
         Go Back Home
       </Button>

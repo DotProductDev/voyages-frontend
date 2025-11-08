@@ -23,6 +23,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 
+import { deleteContribution } from '@/fetch/contributeFetch/deleteContribution';
 import { fetchContributionsDataByAuthor } from '@/fetch/contributeFetch/fetchContributionsData';
 import { usePageRouter } from '@/hooks/usePageRouter';
 import { useSearchEditRequestsFilters } from '@/hooks/useSearchEditRequestsFilters';
@@ -131,7 +132,7 @@ const NewVoyage: React.FC = ({
     }),
     [],
   );
-  const columnDefs = useColumnNewVoyagesDefs();
+
   const getRowRowStyle = useCallback(
     () => ({
       fontSize: '0.8rem',
@@ -182,18 +183,9 @@ const NewVoyage: React.FC = ({
     }
   }, [location, navigate, user?.email, fetchContributions]);
 
-  const handleRowClick = useCallback(
-    ({ data, event }: any) => {
-      if (!event || !data) return;
-
-      const target = event.target as HTMLElement;
-      const cellElement = target.closest('.ag-cell');
-      const colId = cellElement?.getAttribute('col-id');
-      const disabledColumns = ['status', 'ag-Grid-SelectionColumn'];
-
-      if (colId && disabledColumns.includes(colId)) {
-        return;
-      }
+  const handleEditContribution = useCallback(
+    (data: TransformedContribution) => {
+      if (!data) return;
 
       // Set the selected contribution
       setSelectedContribution(data);
@@ -249,6 +241,27 @@ const NewVoyage: React.FC = ({
     fetchContributions();
     navigate('/contribute/interim/new/', { replace: true });
   }, [fetchContributions, navigate]);
+
+  // Handle delete contribution
+  const handleDelete = useCallback(
+    async (contributionId: string) => {
+      try {
+        await deleteContribution(contributionId, user?.email);
+        message.success('Contribution deleted successfully');
+        fetchContributions();
+      } catch (error) {
+        console.error('Error deleting contribution:', error);
+        message.error('Failed to delete contribution');
+      }
+    },
+    [user?.email, fetchContributions],
+  );
+
+  // Define column definitions with handlers
+  const columnDefs = useColumnNewVoyagesDefs(
+    handleEditContribution,
+    handleDelete,
+  );
 
   // Handle contribution form change
   const handleContributionChange = useCallback(
@@ -392,7 +405,6 @@ const NewVoyage: React.FC = ({
               getRowStyle={getRowRowStyle}
               enableBrowserTooltips={true}
               paginationPageSize={rowsPerPage}
-              onRowClicked={handleRowClick}
               pagination={true}
               suppressPaginationPanel={true}
               getRowClass={(params) =>
