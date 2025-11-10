@@ -5,26 +5,30 @@ import { useState } from 'react';
 
 import {
   Contribution,
+  ContributionStatus,
   MaterializedEntity,
 } from '@dotproductdev/voyages-contribute';
 import { Form, Input, Button } from 'antd';
+import { useSelector } from 'react-redux';
 
 import LOADINGLOGO from '@/assets/sv-logo_v2_notext.svg';
 import { fetchSubmitEditVoaygesForm } from '@/fetch/contributeFetch/fetchSubmitEditVoaygesForm';
+import { RootState } from '@/redux/store';
 
 import {
   ContributionForm,
   ContributionSectionStyle,
   ReviewMode,
 } from '../ContributionForm';
+import { TransformedContribution } from '../utils/transformContributionData';
 
 const initialExistingVoyageEntity: MaterializedEntity = {
   entityRef: {
-    type: 'existing', // or 'new' if you're creating
+    type: 'existing',
     schema: 'Voyage',
     id: 0,
   },
-  data: {}, // <-- initially empty, you can add more fields if needed
+  data: {},
   state: 'original',
 };
 
@@ -35,13 +39,14 @@ const EditExistingVoyage: React.FC<EditExistingVoyageProps> = ({
   openSideBar,
 }) => {
   const [formId] = Form.useForm();
-  const [entity, setEntity] = useState<MaterializedEntity | undefined>(
-    initialExistingVoyageEntity as MaterializedEntity,
+  const { user } = useSelector((state: RootState) => state.getAuthUserSlice);
+  const [formEntity, setFormEntity] = useState<MaterializedEntity | undefined>(
+    initialExistingVoyageEntity,
   );
   const [loading, setLoading] = useState(false);
-  const [contribuition, setContribuition] = useState<Contribution | undefined>(
-    undefined,
-  );
+  const [selectedContribution, setSelectedContribution] = useState<
+    Contribution | TransformedContribution | undefined
+  >(undefined);
 
   const handleSubmit = async (values: any): Promise<void> => {
     const voyageId = values.voyageId;
@@ -49,27 +54,30 @@ const EditExistingVoyage: React.FC<EditExistingVoyageProps> = ({
     if (voyageId) {
       setLoading(true);
       const res = await fetchSubmitEditVoaygesForm(voyageId);
-      if (res.status === 200) {
-        setEntity(res.data);
-        setContribuition({
+
+      const existingContribution: Contribution = {
+        id: '-1',
+        root: {
+          type: 'new',
+          schema: '',
           id: '-1',
-          root: {
-            type: 'new',
-            schema: '',
-            id: '-1',
-          },
-          changeSet: {
-            id: '-1',
-            author: 'Mocked',
-            title: `Mocked edit voyage ${voyageId}`,
-            changes: [],
-            comments: '',
-            timestamp: new Date().getTime(),
-          },
-          status: 0,
-          reviews: [],
-          media: [],
-        });
+        },
+        changeSet: {
+          id: '-1',
+          author: user?.email || '',
+          title: `Edit voyage ${voyageId}`,
+          changes: [],
+          comments: '',
+          timestamp: new Date().getTime(),
+        },
+        status: ContributionStatus.WorkInProgress,
+        reviews: [],
+        media: [],
+      };
+
+      if (res.status === 200) {
+        setFormEntity(res.data);
+        setSelectedContribution(existingContribution);
         setLoading(true);
       } else {
         alert(`Voyage not found/error on api`);
@@ -80,7 +88,8 @@ const EditExistingVoyage: React.FC<EditExistingVoyageProps> = ({
       setLoading(true);
     }
   };
-  const hasEntity = entity && entity.entityRef.id !== 0;
+
+  const hasEntity = formEntity && formEntity.entityRef.id !== 0;
 
   return (
     <div
@@ -176,12 +185,12 @@ const EditExistingVoyage: React.FC<EditExistingVoyageProps> = ({
           </div>
         )}
       </div>
-      {hasEntity && contribuition && (
+      {hasEntity && selectedContribution && (
         <ContributionForm
           title="Edit an Existing Record of a Voyage"
-          entity={entity}
-          contribuition={contribuition}
-          onChange={setContribuition}
+          entity={formEntity}
+          contribuition={selectedContribution}
+          onChange={setSelectedContribution}
           mode={ReviewMode.Edit}
         />
       )}

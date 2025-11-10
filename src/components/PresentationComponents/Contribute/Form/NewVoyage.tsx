@@ -219,7 +219,7 @@ const NewVoyage: React.FC = ({
         author: user?.email || '',
         title: '',
         comments: '',
-        timestamp: Date.now(),
+        timestamp: new Date().getTime(),
         changes: [],
       },
       status: ContributionStatus.WorkInProgress,

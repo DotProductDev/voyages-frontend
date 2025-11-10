@@ -67,33 +67,36 @@ const ChangesSummary = ({
         ) : (
           <Timeline
             mode="left"
-            items={changes.map((change, index) => ({
-              key: index,
-              color: 'blue',
-              dot: iconMap[change.type],
-              children: (
-                <div style={{ marginTop: 10, marginBottom: 10 }}>
-                  <div style={{ marginBottom: 8 }}>
-                    <Text strong style={{ color: 'rgb(55, 148, 141)' }}>
-                      {change.type.toUpperCase()} @{' '}
-                      <Text type="secondary">
-                        {change.entityRef.schema}#{change.entityRef.id}
+            items={changes.map((change, index) => {
+              console.log({ change });
+              return {
+                key: index,
+                color: 'blue',
+                dot: iconMap[change.type],
+                children: (
+                  <div style={{ marginTop: 10, marginBottom: 10 }}>
+                    <div style={{ marginBottom: 8 }}>
+                      <Text strong style={{ color: 'rgb(55, 148, 141)' }}>
+                        {change.type.toUpperCase()} @{' '}
+                        <Text type="secondary">
+                          {change.entityRef.schema}#{change.entityRef.id}
+                        </Text>
                       </Text>
-                    </Text>
+                    </div>
+                    {change.type === 'update' ? (
+                      <PropertyChangesList
+                        changes={change.changes}
+                        handleDeleteChange={handleDeleteChange}
+                      />
+                    ) : change.type === 'delete' ? (
+                      <div>Delete</div>
+                    ) : (
+                      <div>Un Delete</div>
+                    )}
                   </div>
-                  {change.type === 'update' ? (
-                    <PropertyChangesList
-                      changes={change.changes}
-                      handleDeleteChange={handleDeleteChange}
-                    />
-                  ) : change.type === 'delete' ? (
-                    <div>Delete</div>
-                  ) : (
-                    <div>Un Delete</div>
-                  )}
-                </div>
-              ),
-            }))}
+                ),
+              };
+            })}
           />
         )}
       </div>
