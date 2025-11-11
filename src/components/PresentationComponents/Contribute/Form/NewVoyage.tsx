@@ -25,13 +25,16 @@ import { v4 as uuidv4 } from 'uuid';
 
 import { deleteContribution } from '@/fetch/contributeFetch/deleteContribution';
 import { fetchContributionsDataByAuthor } from '@/fetch/contributeFetch/fetchContributionsData';
+import { fetchSubmitEditVoaygesForm } from '@/fetch/contributeFetch/fetchSubmitEditVoaygesForm';
 import { usePageRouter } from '@/hooks/usePageRouter';
 import { useSearchEditRequestsFilters } from '@/hooks/useSearchEditRequestsFilters';
+import { useVoyageContribution } from '@/hooks/useVoyageContribution';
 import { loadUserFromStorage } from '@/redux/getAuthUserSlice';
 import { RootState } from '@/redux/store';
 
 import { useColumnNewVoyagesDefs } from '../commons/useColumnDefs';
-import { ContributionForm, ReviewMode } from '../ContributionForm';
+import { VoyageFormWrapper } from '../commons/VoyageFormWrapper';
+import { ReviewMode } from '../ContributionForm';
 import {
   TransformedContribution,
   transformContributionData,
@@ -62,52 +65,96 @@ const NewVoyage: React.FC = ({
   }, [dispatch]);
 
   const [form] = Form.useForm();
-  const [contributions, setContributions] = useState<TransformedContribution[]>(
-    [],
-  );
   const gridRef = useRef<AgGridReact<TransformedContribution>>(null);
   const { newVoyagesFilters, buildNewVoyagesFilterQuery } =
     useSearchEditRequestsFilters(form, gridRef);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [page, setPage] = useState(1);
   const [totalResultsCount, setTotalResultsCount] = useState(0);
-  // State for showing form vs table
   const [showForm, setShowForm] = useState(false);
-  const [selectedContribution, setSelectedContribution] = useState<
-    Contribution | TransformedContribution | undefined
-  >(undefined);
-  const [formEntity, setFormEntity] = useState<MaterializedEntity | undefined>(
-    undefined,
-  );
   const [formMode, setFormMode] = useState<ReviewMode>(ReviewMode.Create);
   const [contributionId, setContributionId] = useState<string | undefined>('');
 
+  // Use shared hook for contribution state management
+  const {
+    selectedContribution,
+    formEntity,
+    setFormEntity,
+    setSelectedContribution,
+    setContributions,
+    contributions,
+  } = useVoyageContribution();
+
   // Load contribution by ID when id param exists
-
   useEffect(() => {
-    if (id && user?.email && contributions.length > 0) {
-      const contribution = contributions.find((c) => c.voyage_id === id);
-      if (contribution) {
-        setSelectedContribution(contribution);
-        setFormMode(ReviewMode.Edit);
-        setContributionId(id);
-        // Create entity from the contribution
-        if (
-          contribution.changeSet?.changes &&
-          contribution.changeSet.changes.length > 0
-        ) {
-          const schema = contribution.changeSet.changes[0].entityRef.schema;
-          const entityId = contribution.changeSet.changes[0].entityRef.id;
-          const entity = materializeNew(getSchema(schema), entityId);
-          setFormEntity(entity);
-        } else {
-          setFormEntity(tempNewVoyage);
-        }
+    const loadContribution = async () => {
+      if (id && user?.email && contributions.length > 0) {
+        const contribution = contributions.find((c) => c.id === id);
+        if (contribution) {
+          setFormMode(ReviewMode.Edit);
+          setContributionId(id);
 
-        setShowForm(true);
+          // Check if this is editing an existing voyage or creating a new one
+          const isExistingVoyage = contribution.root.type === 'existing';
+
+          let entityToUse: MaterializedEntity;
+
+          if (isExistingVoyage) {
+            // For existing voyages: Fetch the actual entity from the database
+            try {
+              const res = await fetchSubmitEditVoaygesForm(
+                String(contribution.root.id),
+              );
+              if (res.status === 200 && res.data) {
+                entityToUse = res.data;
+              } else {
+                // Fallback to blank entity if fetch fails
+                console.error(
+                  'Failed to fetch existing voyage, using blank entity',
+                );
+                entityToUse = materializeNew(
+                  getSchema(contribution.root.schema),
+                  contribution.root.id,
+                );
+              }
+            } catch (error) {
+              console.error('Error fetching existing voyage:', error);
+              // Fallback to blank entity
+              entityToUse = materializeNew(
+                getSchema(contribution.root.schema),
+                contribution.root.id,
+              );
+            }
+          } else {
+            // For "new" voyages: Create blank entity
+            entityToUse = materializeNew(
+              getSchema(contribution.root.schema),
+              contribution.root.id,
+            );
+          }
+
+          setFormEntity(entityToUse);
+
+          // Keep the contribution with all its changes intact
+          // ContributionForm's stackedEntity will apply them for display
+          const editableContribution: Contribution = {
+            ...contribution,
+            root: {
+              ...contribution.root,
+              type: (isExistingVoyage ? 'existing' : 'new') as
+                | 'existing'
+                | 'new',
+            },
+          };
+
+          setSelectedContribution(editableContribution);
+          setShowForm(true);
+        }
       }
-    }
-  }, [id, user?.email, contributions]);
+    };
+
+    loadContribution();
+  }, [id, user?.email, contributions, setFormEntity, setSelectedContribution]);
 
   const handlePageChange = useCallback(
     (newPage: number, pageSize?: number) => {
@@ -162,7 +209,7 @@ const NewVoyage: React.FC = ({
       console.error('Error fetching data:', err);
       message.error('Failed to fetch contributions');
     }
-  }, [buildNewVoyagesFilterQuery, user?.email]);
+  }, [buildNewVoyagesFilterQuery, user?.email, setContributions]);
 
   useEffect(() => {
     const state = location.state as { reload?: boolean; timestamp?: number };
@@ -181,30 +228,74 @@ const NewVoyage: React.FC = ({
       // Clear the state to prevent repeated reloads
       navigate(location.pathname, { replace: true, state: {} });
     }
-  }, [location, navigate, user?.email, fetchContributions]);
+  }, [
+    location,
+    navigate,
+    user?.email,
+    fetchContributions,
+    setContributions,
+    setFormEntity,
+    setSelectedContribution,
+  ]);
 
   const handleEditContribution = useCallback(
-    (data: TransformedContribution) => {
+    async (data: TransformedContribution) => {
       if (!data) return;
-
-      // Set the selected contribution
-      setSelectedContribution(data);
       setFormMode(ReviewMode.Edit);
+      setContributionId(data.id);
 
-      // Create entity from the contribution
-      if (data.changeSet?.changes && data.changeSet.changes.length > 0) {
-        const schema = data.changeSet.changes[0].entityRef.schema;
-        const entityId = data.changeSet.changes[0].entityRef.id;
-        const entity = materializeNew(getSchema(schema), entityId);
-        setFormEntity(entity);
+      // Check if this is editing an existing voyage or creating a new one
+      const isExistingVoyage = data.root.type === 'existing';
+
+      let entityToUse: MaterializedEntity;
+
+      if (isExistingVoyage) {
+        // For existing voyages: Fetch the actual entity from the database
+        try {
+          const res = await fetchSubmitEditVoaygesForm(String(data.root.id));
+          if (res.status === 200 && res.data) {
+            entityToUse = res.data;
+          } else {
+            // Fallback to blank entity if fetch fails
+            console.error(
+              'Failed to fetch existing voyage, using blank entity',
+            );
+            entityToUse = materializeNew(
+              getSchema(data.root.schema),
+              data.root.id,
+            );
+          }
+        } catch (error) {
+          console.error('Error fetching existing voyage:', error);
+          // Fallback to blank entity
+          entityToUse = materializeNew(
+            getSchema(data.root.schema),
+            data.root.id,
+          );
+        }
       } else {
-        // Fallback to default entity
-        setFormEntity(tempNewVoyage);
+        // For "new" voyages: Create blank entity
+        // The ContributionForm will apply changes via stackedEntity memo
+        entityToUse = materializeNew(getSchema(data.root.schema), data.root.id);
       }
+
+      setFormEntity(entityToUse);
+
+      // Keep the contribution with all its changes intact
+      // ContributionForm's stackedEntity will apply them for display
+      const editableContribution: Contribution = {
+        ...data,
+        root: {
+          ...data.root,
+          type: (isExistingVoyage ? 'existing' : 'new') as 'existing' | 'new',
+        },
+      };
+
+      setSelectedContribution(editableContribution);
       setShowForm(true);
-      navigate(`/contribute/interim/new/${data?.voyage_id}`);
+      navigate(`/contribute/interim/new/${data?.id}`);
     },
-    [navigate],
+    [navigate, setSelectedContribution, setFormEntity],
   );
 
   // Handle new voyage button click
@@ -231,7 +322,7 @@ const NewVoyage: React.FC = ({
     setSelectedContribution(newContribution);
     setFormMode(ReviewMode.Create);
     setShowForm(true);
-  }, [user?.email]);
+  }, [user?.email, setSelectedContribution, setFormEntity]);
 
   // Handle back button click
   const handleBackClick = useCallback(() => {
@@ -240,7 +331,7 @@ const NewVoyage: React.FC = ({
     setFormEntity(undefined);
     fetchContributions();
     navigate('/contribute/interim/new/', { replace: true });
-  }, [fetchContributions, navigate]);
+  }, [fetchContributions, navigate, setSelectedContribution, setFormEntity]);
 
   // Handle delete contribution
   const handleDelete = useCallback(
@@ -280,7 +371,7 @@ const NewVoyage: React.FC = ({
         }, 500);
       }
     },
-    [fetchContributions, formMode],
+    [fetchContributions, formMode, setSelectedContribution],
   );
 
   // Fetch contributions on mount and when filters change
@@ -330,9 +421,9 @@ const NewVoyage: React.FC = ({
           </div>
 
           <Divider style={{ margin: '12px 0' }} />
-          <ContributionForm
+          <VoyageFormWrapper
             entity={formEntity}
-            contribuition={selectedContribution}
+            contribution={selectedContribution}
             onChange={handleContributionChange}
             mode={formMode}
             contributionId={contributionId}

@@ -68,7 +68,6 @@ const ChangesSummary = ({
           <Timeline
             mode="left"
             items={changes.map((change, index) => {
-              console.log({ change });
               return {
                 key: index,
                 color: 'blue',

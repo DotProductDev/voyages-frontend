@@ -1,96 +1,159 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import '@/style/contributeContent.scss';
 import '@/style/newVoyages.scss';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import {
   Contribution,
   ContributionStatus,
-  MaterializedEntity,
 } from '@dotproductdev/voyages-contribute';
-import { Form, Input, Button } from 'antd';
-import { useSelector } from 'react-redux';
+import { Form, Input, Button, Modal } from 'antd';
+import { useDispatch, useSelector } from 'react-redux';
+import { useParams } from 'react-router-dom';
 
 import LOADINGLOGO from '@/assets/sv-logo_v2_notext.svg';
 import { fetchSubmitEditVoaygesForm } from '@/fetch/contributeFetch/fetchSubmitEditVoaygesForm';
+import { useVoyageContribution } from '@/hooks/useVoyageContribution';
+import { loadUserFromStorage } from '@/redux/getAuthUserSlice';
 import { RootState } from '@/redux/store';
-
 import {
-  ContributionForm,
-  ContributionSectionStyle,
-  ReviewMode,
-} from '../ContributionForm';
-import { TransformedContribution } from '../utils/transformContributionData';
+  checkVoyageConflict,
+  getConflictErrorMessage,
+} from '@/utils/functions/voyageValidation';
 
-const initialExistingVoyageEntity: MaterializedEntity = {
-  entityRef: {
-    type: 'existing',
-    schema: 'Voyage',
-    id: 0,
-  },
-  data: {},
-  state: 'original',
-};
+import { VoyageFormWrapper } from '../commons/VoyageFormWrapper';
+import { ContributionSectionStyle, ReviewMode } from '../ContributionForm';
 
 interface EditExistingVoyageProps {
   openSideBar: boolean;
 }
+
 const EditExistingVoyage: React.FC<EditExistingVoyageProps> = ({
   openSideBar,
 }) => {
   const [formId] = Form.useForm();
+  const dispatch = useDispatch();
+  const { id: ID } = useParams<{ id: string }>();
   const { user } = useSelector((state: RootState) => state.getAuthUserSlice);
-  const [formEntity, setFormEntity] = useState<MaterializedEntity | undefined>(
-    initialExistingVoyageEntity,
-  );
   const [loading, setLoading] = useState(false);
-  const [selectedContribution, setSelectedContribution] = useState<
-    Contribution | TransformedContribution | undefined
-  >(undefined);
+  const [contributionId, setContributionId] = useState<string | undefined>('');
+  useEffect(() => {
+    dispatch(loadUserFromStorage());
+  }, [dispatch]);
+  // Use shared hook for contribution state management
+  const {
+    selectedContribution,
+    formEntity,
+    updateContribution,
+    setContributionWithEntity,
+    resetContribution,
+  } = useVoyageContribution();
+
+  // Handle back button click to return to search
+  const handleBack = () => {
+    resetContribution();
+    formId.resetFields();
+    setLoading(false);
+  };
 
   const handleSubmit = async (values: any): Promise<void> => {
     const voyageId = values.voyageId;
+    if (!voyageId) {
+      Modal.error({
+        title: 'Voyage ID Required',
+        content: 'Please enter a voyage ID to continue.',
+      });
+      return;
+    }
 
-    if (voyageId) {
-      setLoading(true);
+    setLoading(true);
+
+    try {
+      // Use shared validation utility to check for conflicts
+      const conflictResult = await checkVoyageConflict(
+        voyageId,
+        user?.email || '',
+        'existing',
+      );
+
+      if (conflictResult.hasConflict) {
+        Modal.error({
+          title: 'Voyage Already Submitted',
+          content: getConflictErrorMessage(conflictResult.conflictType!),
+        });
+        setLoading(false);
+        return;
+      }
+
+      // Proceed with fetching the existing voyage
       const res = await fetchSubmitEditVoaygesForm(voyageId);
 
-      const existingContribution: Contribution = {
-        id: '-1',
-        root: {
-          type: 'new',
-          schema: '',
-          id: '-1',
-        },
-        changeSet: {
-          id: '-1',
-          author: user?.email || '',
-          title: `Edit voyage ${voyageId}`,
-          changes: [],
-          comments: '',
-          timestamp: new Date().getTime(),
-        },
-        status: ContributionStatus.WorkInProgress,
-        reviews: [],
-        media: [],
-      };
-
       if (res.status === 200) {
-        setFormEntity(res.data);
-        setSelectedContribution(existingContribution);
-        setLoading(true);
+        const { data } = res;
+
+        // The API returns a MaterializedEntity with the existing voyage data
+        const materializedEntity = data;
+        const entityRef = materializedEntity?.entityRef;
+
+        if (!entityRef) {
+          Modal.error({
+            title: 'Invalid Data',
+            content: 'The voyage data received is invalid. Please try again.',
+          });
+          setLoading(false);
+          return;
+        }
+
+        const updateID = `${entityRef.schema}.${entityRef.schema}.${entityRef.id}`;
+        setContributionId(updateID);
+
+        // Create a contribution using the fresh entity data from the API
+        // The entity contains all the current voyage data
+        // The contribution will track changes made by the user
+        const existingContribution: Contribution = {
+          id: updateID,
+          root: {
+            type: 'existing', // This is an existing voyage in the database
+            schema: entityRef.schema,
+            id: String(entityRef.id),
+          },
+          changeSet: {
+            id: ID!,
+            author: user?.email || '',
+            title: `Edit voyage ${voyageId}`,
+            changes: [], // Start with empty changes - user will make edits
+            comments: '',
+            timestamp: new Date().getTime(),
+          },
+          status: ContributionStatus.WorkInProgress,
+          reviews: [],
+          media: [],
+        };
+
+        // Pass the materialized entity (with all existing voyage data) and the contribution
+        // - The entity will be displayed in EntityForm (shows all current data)
+        // - The empty changeSet will track new edits in ChangesSummary
+        setContributionWithEntity(existingContribution, materializedEntity);
+        setLoading(false);
       } else {
-        alert(`Voyage not found/error on api`);
-        setLoading(true);
+        Modal.error({
+          title: 'Voyage Not Found',
+          content: `Voyage ID ${voyageId} was not found in the database. Please verify the ID and try again.`,
+        });
+        setLoading(false);
       }
-    } else {
-      alert(`Please enter a voyage ID`);
-      setLoading(true);
+    } catch (error) {
+      console.error('Error validating or fetching voyage:', error);
+      Modal.error({
+        title: 'Error',
+        content:
+          'An error occurred while processing your request. Please try again.',
+      });
+      setLoading(false);
     }
   };
 
-  const hasEntity = formEntity && formEntity.entityRef.id !== 0;
-
+  const hasEntity = formEntity && formEntity?.entityRef?.id !== 0;
   return (
     <div
       className="contribute-content"
@@ -123,9 +186,6 @@ const EditExistingVoyage: React.FC<EditExistingVoyageProps> = ({
                   <Form.Item
                     style={{ flex: 1, marginBottom: 0 }}
                     name="voyageId"
-                    rules={[
-                      { required: true, message: 'Please input Voyage ID!' },
-                    ]}
                   >
                     <Input placeholder="Enter Voyage ID" type="number" />
                   </Form.Item>
@@ -186,12 +246,16 @@ const EditExistingVoyage: React.FC<EditExistingVoyageProps> = ({
         )}
       </div>
       {hasEntity && selectedContribution && (
-        <ContributionForm
+        <VoyageFormWrapper
           title="Edit an Existing Record of a Voyage"
+          showBackButton={true}
+          onBack={handleBack}
+          backButtonText="← Back to Search"
           entity={formEntity}
-          contribuition={selectedContribution}
-          onChange={setSelectedContribution}
+          contribution={selectedContribution}
+          onChange={updateContribution}
           mode={ReviewMode.Edit}
+          contributionId={contributionId}
         />
       )}
     </div>

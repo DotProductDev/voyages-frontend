@@ -1,13 +1,14 @@
 // store/authSlice.ts
-import { AuthState, User } from '@/share/InterfaceTypeUser';
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+
+import { AuthState, User } from '@/share/InterfaceTypeUser';
 
 const initialState: AuthState = {
   user: {
     username: '',
     name: '',
-    token:'',
-    email:''
+    token: '',
+    email: '',
   },
 };
 
@@ -19,8 +20,7 @@ const getAuthUserSlice = createSlice({
       state.user = action.payload;
       localStorage.setItem('user', JSON.stringify(action.payload));
     },
-    logout: (state) => {
-      state.user = null;
+    logout: () => {
       localStorage.removeItem('user');
     },
     loadUserFromStorage: (state) => {

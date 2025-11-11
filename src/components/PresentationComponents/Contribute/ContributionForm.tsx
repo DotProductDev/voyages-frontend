@@ -37,7 +37,7 @@ import {
   message,
 } from 'antd';
 import { useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 
 import { createSaveChangeContribution } from '@/fetch/contributeFetch/createSaveChangeContribution';
 import { createSubmitChangeContribution } from '@/fetch/contributeFetch/createSubmitChangeContribution';
@@ -101,7 +101,7 @@ function combineEntityChanges(changes: EntityChange[]): EntityChange[] {
 
 export interface ContributionFormProps {
   entity: MaterializedEntity;
-  contribuition: Contribution;
+  contribution: Contribution;
   onChange: (contribuition: Contribution | TransformedContribution) => void;
   accessLevel?: PropertyAccessLevel;
   contributionId?: string;
@@ -120,7 +120,7 @@ export interface ContributionFormProps {
 
 export const ContributionForm = ({
   entity,
-  contribuition,
+  contribution,
   onChange,
   accessLevel: initAccessLevel,
   contributionId,
@@ -133,11 +133,13 @@ export const ContributionForm = ({
   title,
 }: ContributionFormProps) => {
   const navigate = useNavigate();
-  const { reviews, changeSet } = contribuition;
+  const { id: ID } = useParams<{ id: string }>();
+  const { reviews, changeSet } = contribution;
   const { contributePath } = usePageRouter();
   const { languageValue } = useSelector(
     (state: RootState) => state.getLanguages,
   );
+
   const { user } = useSelector((state: RootState) => state.getAuthUserSlice);
   const translatedcontribute = translationLanguagesContribute(languageValue);
   const [contributeForm] = Form.useForm();
@@ -248,13 +250,13 @@ export const ContributionForm = ({
 
   // Review mode handlers
   const handleStartReview = useCallback(() => {
-    setPreReviewState(contribuition);
+    setPreReviewState(contribution);
     setIsReviewMode(true);
     setReviewChanges([]);
     if (onStartReview) {
       onStartReview();
     }
-  }, [contribuition, onStartReview]);
+  }, [contribution, onStartReview]);
 
   const handleCommitReview = useCallback(() => {
     if (reviewChanges.length === 0) {
@@ -337,9 +339,9 @@ export const ContributionForm = ({
         const combined = combineEntityChanges(nextReviewChanges);
         setReviewChanges(combined);
         onChange({
-          ...contribuition,
+          ...contribution,
           changeSet: {
-            ...(contribuition.changeSet || changeSet),
+            ...(contribution.changeSet || changeSet),
             changes: combined,
           },
         });
@@ -348,7 +350,7 @@ export const ContributionForm = ({
         dropOrphans(next);
         const combined = combineEntityChanges(next);
         onChange({
-          ...contribuition,
+          ...contribution,
           changeSet: {
             ...changeSet,
             changes: combined,
@@ -356,7 +358,7 @@ export const ContributionForm = ({
         });
       }
     },
-    [contribuition, isReviewMode, reviewChanges, changeSet, onChange],
+    [contribution, isReviewMode, reviewChanges, changeSet, onChange],
   );
 
   const handlePreviewChanges = useCallback(() => {
@@ -380,18 +382,18 @@ export const ContributionForm = ({
 
   const handleSaveChanges = async () => {
     setIsSaving(true);
-    setIsSaveChange(false); // Reset while saving
+    setIsSaveChange(false);
     try {
       const formValues = await contributeForm.validateFields();
 
       const changesToSubmit = isReviewMode ? reviewChanges : changeSet.changes;
       const payload: Contribution = {
-        id: contributionId!,
+        id: contributionId ? contributionId : ID!,
         root: entity.entityRef,
         changeSet: {
           title: formValues.title || changeSet.title,
           comments: formValues.comments || changeSet.comments || '',
-          timestamp: Date.now(),
+          timestamp: new Date().getTime(),
           changes: changesToSubmit,
           author: changeSet.author || user?.email,
           id: changeSetId,
@@ -433,12 +435,12 @@ export const ContributionForm = ({
 
       const changesToSubmit = isReviewMode ? reviewChanges : changeSet.changes;
       const payload: Contribution = {
-        id: contributionId!,
+        id: contributionId ? contributionId : ID!,
         root: entity.entityRef,
         changeSet: {
           title: formValues.title || changeSet.title,
           comments: formValues.comments || changeSet.comments || '',
-          timestamp: Date.now(),
+          timestamp: new Date().getTime(),
           changes: changesToSubmit,
           author: changeSet.author || user?.email,
           id: changeSetId,
@@ -452,7 +454,6 @@ export const ContributionForm = ({
         payload,
         user.email,
       );
-
       message.success('Contribution submitted successfully!');
       setIsSaveChange(false);
       navigate('/contribute/interim/new/', {
@@ -495,9 +496,9 @@ export const ContributionForm = ({
           handleCancelReview();
         } else {
           onChange({
-            ...contribuition,
+            ...contribution,
             changeSet: {
-              ...contribuition.changeSet,
+              ...contribution.changeSet,
               changes: [],
             },
           });
@@ -506,7 +507,7 @@ export const ContributionForm = ({
       },
     });
   }, [
-    contribuition,
+    contribution,
     isReviewMode,
     handleCancelReview,
     onChange,
@@ -565,15 +566,15 @@ export const ContributionForm = ({
       if (isReviewMode) {
         setReviewChanges(updatedChanges);
         onChange({
-          ...contribuition,
+          ...contribution,
           changeSet: {
-            ...(contribuition.changeSet || changeSet),
+            ...(contribution.changeSet || changeSet),
             changes: updatedChanges,
           },
         });
       } else {
         onChange({
-          ...contribuition,
+          ...contribution,
           changeSet: {
             ...changeSet,
             changes: updatedChanges,
@@ -581,7 +582,7 @@ export const ContributionForm = ({
         });
       }
     },
-    [contribuition, isReviewMode, reviewChanges, changeSet, onChange],
+    [contribution, isReviewMode, reviewChanges, changeSet, onChange],
   );
 
   // Display the appropriate change count
