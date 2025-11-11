@@ -22,6 +22,7 @@ import {
   ContributionStatus,
   Review,
   Contribution,
+  EntityUpdate,
 } from '@dotproductdev/voyages-contribute';
 import {
   CollapseProps,
@@ -80,23 +81,56 @@ function combineOwnedChanges(changes: PropertyChange[]): PropertyChange[] {
 }
 
 function combineEntityChanges(changes: EntityChange[]): EntityChange[] {
-  return changes.map((change) => {
+  const entityMap: Record<string, EntityUpdate> = {};
+  const otherChanges: EntityChange[] = [];
+
+  changes.forEach((change) => {
     if (change.type === 'update') {
-      return {
-        ...change,
-        changes: change.changes.map((propertyChange) => {
-          if (propertyChange.kind === 'owned') {
-            return {
-              ...propertyChange,
-              changes: combineOwnedChanges(propertyChange.changes),
-            };
-          }
-          return propertyChange;
-        }),
-      };
+      const key = `${change.entityRef.schema}_${change.entityRef.id}`;
+
+      if (!entityMap[key]) {
+        entityMap[key] = {
+          ...change,
+          changes: [],
+        };
+      }
+
+      // Combine property changes, handling owned entities specially
+      const propertyMap: Record<string, PropertyChange> = {};
+
+      // First, add existing changes from the map
+      entityMap[key].changes.forEach((propChange) => {
+        propertyMap[propChange.property] = propChange;
+      });
+
+      // Then merge in new changes
+      change.changes.forEach((propertyChange) => {
+        if (propertyChange.kind === 'owned') {
+          // For owned entities, keep only the latest change per property
+          // This handles the case where we're replacing a new entity with an existing one
+          propertyMap[propertyChange.property] = {
+            ...propertyChange,
+            changes: propertyChange.changes
+              ? combineOwnedChanges(propertyChange.changes)
+              : [],
+          };
+        } else if (propertyChange.kind === 'direct') {
+          // For direct changes, just use the latest
+          propertyMap[propertyChange.property] = propertyChange;
+        } else {
+          // For other kinds (linked, etc.), use the latest
+          propertyMap[propertyChange.property] = propertyChange;
+        }
+      });
+
+      entityMap[key].changes = Object.values(propertyMap);
+    } else {
+      // For 'create', 'delete', or other types, just add them
+      otherChanges.push(change);
     }
-    return change;
   });
+
+  return [...Object.values(entityMap), ...otherChanges];
 }
 
 export interface ContributionFormProps {
@@ -183,6 +217,13 @@ export const ContributionForm = ({
       return entity;
     }
 
+    // In ReadOnly mode for existing voyages (fetched from DB),
+    // don't apply any changes - the fetched entity already has all the correct data
+    // The changes are only for display purposes in the ChangesSummary component
+    if (isReadOnlyMode) {
+      return entity;
+    }
+
     try {
       // Clone the entity first
       const stackedEntityClone = cloneEntity(entity);
@@ -206,15 +247,54 @@ export const ContributionForm = ({
         allChanges = [...allChanges, ...reviewChanges];
       }
 
+      // Combine changes to avoid conflicts with owned entities
+      const combinedChanges = combineEntityChanges(allChanges);
+
+      // For existing voyages (fetched from DB), skip owned entity changes with state="original"
+      // since the fetched entity already has the correct owned entities with their data
+      // We only apply the top-level changes (direct and linked properties on the main entity)
+      const filteredChanges = combinedChanges
+        .map((change) => {
+          if (change.type === 'update') {
+            const updatedChanges: PropertyChange[] = [];
+
+            change.changes.forEach((propChange) => {
+              if (propChange.kind === 'owned' && propChange.ownedEntity) {
+                // If the owned entity state is "original", skip it entirely
+                // The fetched entity already has the correct owned entity data
+                if (propChange.ownedEntity.state === 'original') {
+                  return;
+                }
+                // For new entities or other states, keep the change as-is
+                updatedChanges.push(propChange);
+              } else {
+                // For non-owned changes (direct, linked, etc.), keep them
+                updatedChanges.push(propChange);
+              }
+            });
+
+            if (updatedChanges.length === 0) {
+              return null;
+            }
+
+            return {
+              ...change,
+              changes: updatedChanges,
+            };
+          }
+          return change;
+        })
+        .filter((c) => c !== null) as EntityChange[];
+
       // Apply all changes at once
-      if (allChanges.length > 0) {
+      if (filteredChanges.length > 0) {
         try {
-          applyChanges(expandedEntity, allChanges);
+          applyChanges(expandedEntity, filteredChanges);
         } catch (applyError) {
           console.error('Error applying changes:', applyError);
           console.error(
             'Changes that failed:',
-            JSON.stringify(allChanges, null, 2),
+            JSON.stringify(filteredChanges, null, 2),
           );
           // Return the original entity if changes fail to apply
           return entity;
@@ -226,7 +306,15 @@ export const ContributionForm = ({
       console.error('Error computing stacked entity:', error);
       return entity;
     }
-  }, [changeSet, contributionId, entity, reviews, isReviewMode, reviewChanges]);
+  }, [
+    changeSet,
+    contributionId,
+    entity,
+    reviews,
+    isReviewMode,
+    reviewChanges,
+    isReadOnlyMode,
+  ]);
 
   const accessLevelOptions = Object.entries(PropertyAccessLevel)
     .filter(

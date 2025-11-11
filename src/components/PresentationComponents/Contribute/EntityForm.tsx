@@ -14,7 +14,6 @@ import { EntityPropertyComponent } from './EntityPropertyComponent';
 
 export interface ContributionFormProps {
   entity: MaterializedEntity;
-  // onUpdate: (contribution: Contribution) => void;
 }
 
 export interface EntityFormProps {

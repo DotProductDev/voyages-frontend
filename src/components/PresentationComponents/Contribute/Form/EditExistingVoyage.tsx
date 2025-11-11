@@ -89,10 +89,8 @@ const EditExistingVoyage: React.FC<EditExistingVoyageProps> = ({
       const res = await fetchSubmitEditVoaygesForm(voyageId);
 
       if (res.status === 200) {
-        const { data } = res;
-
         // The API returns a MaterializedEntity with the existing voyage data
-        const materializedEntity = data;
+        const materializedEntity = res.data;
         const entityRef = materializedEntity?.entityRef;
 
         if (!entityRef) {

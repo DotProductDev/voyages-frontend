@@ -79,9 +79,9 @@ const NewVoyage: React.FC = ({
   const {
     selectedContribution,
     formEntity,
-    setFormEntity,
     setSelectedContribution,
     setContributions,
+    updateFormEntity,
     contributions,
   } = useVoyageContribution();
 
@@ -132,8 +132,7 @@ const NewVoyage: React.FC = ({
               contribution.root.id,
             );
           }
-
-          setFormEntity(entityToUse);
+          updateFormEntity(entityToUse);
 
           // Keep the contribution with all its changes intact
           // ContributionForm's stackedEntity will apply them for display
@@ -154,7 +153,13 @@ const NewVoyage: React.FC = ({
     };
 
     loadContribution();
-  }, [id, user?.email, contributions, setFormEntity, setSelectedContribution]);
+  }, [
+    id,
+    user?.email,
+    contributions,
+    setSelectedContribution,
+    updateFormEntity,
+  ]);
 
   const handlePageChange = useCallback(
     (newPage: number, pageSize?: number) => {
@@ -217,7 +222,7 @@ const NewVoyage: React.FC = ({
       // Reset form state
       setShowForm(false);
       setSelectedContribution(undefined);
-      setFormEntity(undefined);
+      updateFormEntity(undefined);
       setContributionId('');
 
       // Fetch fresh data
@@ -234,7 +239,7 @@ const NewVoyage: React.FC = ({
     user?.email,
     fetchContributions,
     setContributions,
-    setFormEntity,
+    updateFormEntity,
     setSelectedContribution,
   ]);
 
@@ -279,8 +284,7 @@ const NewVoyage: React.FC = ({
         entityToUse = materializeNew(getSchema(data.root.schema), data.root.id);
       }
 
-      setFormEntity(entityToUse);
-
+      updateFormEntity(entityToUse);
       // Keep the contribution with all its changes intact
       // ContributionForm's stackedEntity will apply them for display
       const editableContribution: Contribution = {
@@ -295,7 +299,7 @@ const NewVoyage: React.FC = ({
       setShowForm(true);
       navigate(`/contribute/interim/new/${data?.id}`);
     },
-    [navigate, setSelectedContribution, setFormEntity],
+    [navigate, setSelectedContribution, updateFormEntity],
   );
 
   // Handle new voyage button click
@@ -318,20 +322,20 @@ const NewVoyage: React.FC = ({
       media: [],
     };
     setContributionId(String(newEntity.entityRef.id));
-    setFormEntity(newEntity);
+    updateFormEntity(newEntity);
     setSelectedContribution(newContribution);
     setFormMode(ReviewMode.Create);
     setShowForm(true);
-  }, [user?.email, setSelectedContribution, setFormEntity]);
+  }, [user?.email, setSelectedContribution, updateFormEntity]);
 
   // Handle back button click
   const handleBackClick = useCallback(() => {
     setShowForm(false);
     setSelectedContribution(undefined);
-    setFormEntity(undefined);
+    updateFormEntity(undefined);
     fetchContributions();
     navigate('/contribute/interim/new/', { replace: true });
-  }, [fetchContributions, navigate, setSelectedContribution, setFormEntity]);
+  }, [fetchContributions, navigate, setSelectedContribution, updateFormEntity]);
 
   // Handle delete contribution
   const handleDelete = useCallback(
