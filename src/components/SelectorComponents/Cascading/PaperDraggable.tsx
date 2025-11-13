@@ -171,3 +171,39 @@ export function PaperDraggableCreateBatch(props: PaperProps) {
     </Draggable>
   );
 }
+
+export function PaperDraggableEditBatch(props: PaperProps) {
+  const paperRef = useRef<HTMLDivElement>(null);
+
+  return (
+    <Draggable
+      handle="#draggable-dialog-edit-batch"
+      cancel={'[class*="MuiDialogContent-root"]'}
+      nodeRef={paperRef}
+    >
+      <Paper
+        {...props}
+        ref={paperRef}
+        style={{ ...PaperDraggableContributeStyle }}
+      />
+    </Draggable>
+  );
+}
+
+export function PaperDraggableDeleteBatch(props: PaperProps) {
+  const paperRef = useRef<HTMLDivElement>(null);
+
+  return (
+    <Draggable
+      handle="#draggable-dialog-delete-batch"
+      cancel={'[class*="MuiDialogContent-root"]'}
+      nodeRef={paperRef}
+    >
+      <Paper
+        {...props}
+        ref={paperRef}
+        style={{ ...PaperDraggableContributeStyle }}
+      />
+    </Draggable>
+  );
+}

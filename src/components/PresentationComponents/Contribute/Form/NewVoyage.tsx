@@ -23,8 +23,10 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 
-import { deleteContribution } from '@/fetch/contributeFetch/deleteContribution';
-import { fetchContributionsDataByAuthor } from '@/fetch/contributeFetch/fetchContributionsData';
+import {
+  deleteContribution,
+  fetchContributionsDataByAuthor,
+} from '@/fetch/contributeFetch/fetchContributionsData';
 import { fetchSubmitEditVoaygesForm } from '@/fetch/contributeFetch/fetchSubmitEditVoaygesForm';
 import { usePageRouter } from '@/hooks/usePageRouter';
 import { useSearchEditRequestsFilters } from '@/hooks/useSearchEditRequestsFilters';
@@ -83,6 +85,7 @@ const NewVoyage: React.FC = ({
     setContributions,
     updateFormEntity,
     contributions,
+    updateContribution,
   } = useVoyageContribution();
 
   // Load contribution by ID when id param exists
@@ -358,26 +361,6 @@ const NewVoyage: React.FC = ({
     handleDelete,
   );
 
-  // Handle contribution form change
-  const handleContributionChange = useCallback(
-    (contribution: Contribution | TransformedContribution) => {
-      setSelectedContribution(contribution);
-
-      // If contribution has been saved (has a valid ID and is not -1), refresh the table
-      if (
-        contribution?.id &&
-        contribution.id !== '-1' &&
-        formMode === ReviewMode.Create
-      ) {
-        // Small delay to ensure backend has processed
-        setTimeout(() => {
-          fetchContributions();
-        }, 500);
-      }
-    },
-    [fetchContributions, formMode, setSelectedContribution],
-  );
-
   // Fetch contributions on mount and when filters change
   useEffect(() => {
     if (user?.email && !showForm) {
@@ -428,7 +411,7 @@ const NewVoyage: React.FC = ({
           <VoyageFormWrapper
             entity={formEntity}
             contribution={selectedContribution}
-            onChange={handleContributionChange}
+            onChange={updateContribution}
             mode={formMode}
             contributionId={contributionId}
             currentStatus={
