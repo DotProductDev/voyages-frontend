@@ -85,6 +85,35 @@ const NewVoyage: React.FC<NewVoyageProps> = ({
   // Load contribution by ID when id param exists
   useEffect(() => {
     const loadContribution = async () => {
+      // Check if data was passed through navigation state (from ContributeHomeWelcome)
+      const navState = location.state as {
+        formEntity?: MaterializedEntity;
+        selectedContribution?: Contribution;
+        formMode?: ReviewMode;
+      };
+
+      if (id && navState?.formEntity && navState?.selectedContribution) {
+        // Use the data passed through navigation
+        updateFormEntity(navState.formEntity);
+        setSelectedContribution(navState.selectedContribution);
+        setInternalFormMode(navState.formMode || ReviewMode.Edit);
+        setInternalContributionId(id);
+        setInternalShowForm(true);
+        // Clear the navigation state to prevent stale data
+        navigate(location.pathname, { replace: true, state: {} });
+        return;
+      }
+
+      // If data is already loaded in the shared hook (from ContributeHomeWelcome), use it
+      if (id && internalSelectedContribution && internalFormEntity) {
+        // Data is already loaded, just set the form mode
+        setInternalFormMode(ReviewMode.Edit);
+        setInternalContributionId(id);
+        setInternalShowForm(true);
+        return;
+      }
+
+      // Otherwise, load from contributions array
       if (id && user?.email && contributions.length > 0) {
         const contribution = contributions.find((c) => c.id === id);
         if (contribution) {
@@ -153,8 +182,13 @@ const NewVoyage: React.FC<NewVoyageProps> = ({
     id,
     user?.email,
     contributions,
+    internalSelectedContribution,
+    internalFormEntity,
     setSelectedContribution,
     updateFormEntity,
+    location.state,
+    location.pathname,
+    navigate,
   ]);
 
   // Handle new voyage button click
@@ -225,25 +259,10 @@ const NewVoyage: React.FC<NewVoyageProps> = ({
   // If no form is shown and user navigates directly to /contribute/interim/new/
   // Create a new voyage form automatically
   useEffect(() => {
-    if (
-      contributePath === 'interim' &&
-      !showForm &&
-      !id &&
-      user?.email &&
-      !externalShowForm
-    ) {
+    if (contributePath === 'interim' && !showForm && !id && user?.email) {
       handleNewVoyageClick();
     }
-  }, [
-    contributePath,
-    showForm,
-    id,
-    user?.email,
-    handleNewVoyageClick,
-    externalShowForm,
-  ]);
-
-  // Show form view
+  }, [contributePath, showForm, id, user?.email, handleNewVoyageClick]);
   if (showForm && formEntity && selectedContribution) {
     return (
       <>

@@ -36,6 +36,7 @@ import {
   Typography,
   Button,
   message,
+  Splitter,
 } from 'antd';
 import { useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -62,7 +63,7 @@ export enum ReviewMode {
 }
 
 export const ContributionSectionStyle: CSSProperties = {
-  height: 'calc(100vh - 160px)',
+  height: 'calc(100vh - 275px)',
   scrollSnapAlign: 'start',
 };
 export const ContributionSectionStyleCreate: CSSProperties = {
@@ -520,7 +521,7 @@ export const ContributionForm = ({
     Modal.confirm({
       title: 'Submit Contribution',
       content:
-        'Are you sure you want to submit this contribution? Once submitted, it will be sent for review.',
+        'Once you submit your contribution you will not be able to edit it further. To resume editing, just save the data entry form and it will appear on the Contribute Home page. Submit your contribution?',
       okText: 'Submit',
       cancelText: 'Cancel',
       onOk: async () => {
@@ -700,6 +701,10 @@ export const ContributionForm = ({
     ContributionStatus.WorkInProgress,
   ].includes(currentStatus!);
 
+  const contributionSection =
+    mode === ReviewMode.Create
+      ? ContributionSectionStyleCreate
+      : ContributionSectionStyle;
   return (
     <>
       {title && <h1 className="page-title-1">{title}</h1>}
@@ -708,7 +713,7 @@ export const ContributionForm = ({
         layout="vertical"
         onFinish={isSaveChange ? handleSaveChanges : handleSubmitChanges}
         style={{
-          // ...ContributionSectionStyle,
+          ...contributionSection,
           display: 'flex',
           flexDirection: 'column',
           padding: 0,
@@ -782,33 +787,23 @@ export const ContributionForm = ({
                 }
                 name="comments"
               >
-                <Input.TextArea rows={4} disabled={isReadOnlyMode} />
+                <Input.TextArea rows={8} disabled={isReadOnlyMode} />
               </Form.Item>
             </Col>
           </Row>
         </Card>
       </Form>
-      <Row
+      <Splitter
         style={{
-          display: 'flex',
           flex: 1,
           overflow: 'hidden',
-          gap: '4px',
           ...(mode === ReviewMode.Edit ? ContributionSectionStyle : null),
         }}
       >
-        <Col
-          span={12}
-          style={{
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            height: '100%',
-          }}
-        >
+        <Splitter.Panel defaultSize="50%" min="30%" max="70%">
           <Card
             style={{
-              flex: 1,
+              height: '100%',
               overflow: 'auto',
               flexDirection: 'column',
               display: 'flex',
@@ -870,21 +865,12 @@ export const ContributionForm = ({
               </Form>
             </div>
           </Card>
-        </Col>
+        </Splitter.Panel>
 
-        <Col
-          span={12}
-          style={{
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            height: '100%',
-            overflow: 'hidden',
-          }}
-        >
+        <Splitter.Panel>
           <Card
             style={{
-              flex: 1,
+              height: '100%',
               display: 'flex',
               flexDirection: 'column',
               overflow: 'hidden',
@@ -933,7 +919,12 @@ export const ContributionForm = ({
                 ✓ Changes saved. You can now submit your contribution.
               </div>
             )}
-            <div style={{ flex: 1, overflowY: 'auto', padding: 12 }}>
+            <div
+              style={{
+                flex: 1,
+                overflow: 'auto',
+              }}
+            >
               <ChangesSummary
                 changes={displayedChanges}
                 resetAllChanges={resetAllChanges}
@@ -953,8 +944,8 @@ export const ContributionForm = ({
               />
             </div>
           </Card>
-        </Col>
-      </Row>
+        </Splitter.Panel>
+      </Splitter>
       {currentStatus === 1 && (
         <ContributionEditDecision
           handleEditorialDecisionSubmit={handleEditorialDecisionSubmit}

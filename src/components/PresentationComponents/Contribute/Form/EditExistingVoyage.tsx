@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import '@/style/contributeContent.scss';
 import '@/style/newVoyages.scss';
+
 import { useEffect, useState } from 'react';
 
 import {
@@ -22,15 +23,13 @@ import {
 } from '@/utils/functions/voyageValidation';
 
 import { ContributionFormWrapper } from '../commons/ContributionFormWrapper';
-import { ContributionSectionStyle, ReviewMode } from '../ContributionForm';
+import { ReviewMode } from '../ContributionForm';
 
 interface EditExistingVoyageProps {
   openSideBar: boolean;
 }
 
-const EditExistingVoyage: React.FC<EditExistingVoyageProps> = ({
-  openSideBar,
-}) => {
+const EditExistingVoyage: React.FC<EditExistingVoyageProps> = ({}) => {
   const [formId] = Form.useForm();
   const dispatch = useDispatch();
   const { id: ID } = useParams<{ id: string }>();
@@ -81,9 +80,10 @@ const EditExistingVoyage: React.FC<EditExistingVoyageProps> = ({
       );
 
       if (conflictResult.hasConflict) {
+        const resultText = getConflictErrorMessage(conflictResult.status!);
         Modal.error({
-          title: 'Voyage Already Submitted',
-          content: getConflictErrorMessage(conflictResult.conflictType!),
+          title: `Voyage Already ${resultText.status}`,
+          content: resultText.content,
         });
         setLoading(false);
         return;
@@ -157,59 +157,54 @@ const EditExistingVoyage: React.FC<EditExistingVoyageProps> = ({
 
   const hasEntity = formEntity && formEntity?.entityRef?.id !== 0;
   return (
-    <div
-      className="contribute-content"
-      style={{
-        ...ContributionSectionStyle,
-        width: openSideBar ? '75vw' : '90vw',
-        scrollSnapType: 'y mandatory',
-        overflowY: 'auto',
-      }}
-    >
-      <div style={{ ...ContributionSectionStyle, height: undefined }}>
-        {!hasEntity && (
-          <>
-            <h1 className="page-title-1">
-              Edit an Existing Record of a Voyage
-            </h1>
-            <div className="content-inner-wrapper">
-              <p className="description-text">
-                Please select the voyage you wish to edit.
-              </p>
-              <Form layout="vertical" form={formId} onFinish={handleSubmit}>
-                <div
+    <div className="contribute-content" style={{ width: '100%' }}>
+      {hasEntity && selectedContribution ? (
+        <ContributionFormWrapper
+          title="Edit an Existing Record of a Voyage"
+          showBackButton={true}
+          onBack={handleBack}
+          backButtonText="← Back to Search"
+          entity={formEntity}
+          contribution={selectedContribution}
+          onChange={updateContribution}
+          mode={ReviewMode.Edit}
+          contributionId={contributionId}
+        />
+      ) : (
+        <>
+          <h1 className="page-title-1">Edit an Existing Record of a Voyage</h1>
+          <div className="content-inner-wrapper">
+            <p className="description-text">
+              Please select the voyage you wish to edit.
+            </p>
+            <Form layout="vertical" form={formId} onFinish={handleSubmit}>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'start',
+                  marginBottom: 10,
+                  width: 320,
+                }}
+              >
+                <Form.Item style={{ flex: 1, marginBottom: 0 }} name="voyageId">
+                  <Input placeholder="Enter Voyage ID" type="number" />
+                </Form.Item>
+                <Button
+                  type="primary"
+                  ghost
                   style={{
-                    display: 'flex',
-                    alignItems: 'start',
-                    marginBottom: 10,
-                    width: 320,
+                    marginLeft: 10,
+                    height: 32,
+                    borderColor: 'rgb(55, 148, 141)',
+                    color: 'rgb(55, 148, 141)',
                   }}
+                  onClick={() => formId.submit()}
                 >
-                  <Form.Item
-                    style={{ flex: 1, marginBottom: 0 }}
-                    name="voyageId"
-                  >
-                    <Input placeholder="Enter Voyage ID" type="number" />
-                  </Form.Item>
-                  <Button
-                    type="primary"
-                    ghost
-                    style={{
-                      marginLeft: 10,
-                      height: 32,
-                      borderColor: 'rgb(55, 148, 141)',
-                      color: 'rgb(55, 148, 141)',
-                    }}
-                    onClick={() => formId.submit()}
-                  >
-                    Search
-                  </Button>
-                </div>
-              </Form>
-            </div>
-          </>
-        )}
-        {!hasEntity && (
+                  Search
+                </Button>
+              </div>
+            </Form>
+          </div>
           <div
             style={{
               height: '50vh',
@@ -245,20 +240,7 @@ const EditExistingVoyage: React.FC<EditExistingVoyageProps> = ({
               </>
             )}
           </div>
-        )}
-      </div>
-      {hasEntity && selectedContribution && (
-        <ContributionFormWrapper
-          title="Edit an Existing Record of a Voyage"
-          showBackButton={true}
-          onBack={handleBack}
-          backButtonText="← Back to Search"
-          entity={formEntity}
-          contribution={selectedContribution}
-          onChange={updateContribution}
-          mode={ReviewMode.Edit}
-          contributionId={contributionId}
-        />
+        </>
       )}
     </div>
   );
