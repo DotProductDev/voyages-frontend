@@ -179,7 +179,7 @@ export const ContributionForm = ({
   const [contributeForm] = Form.useForm();
   const schema = getSchema(entity.entityRef.schema);
   const [accessLevel, setAccessLevel] = useState<PropertyAccessLevel>(
-    initAccessLevel ?? PropertyAccessLevel.AdvancedContributor,
+    initAccessLevel ?? PropertyAccessLevel.BeginnerContributor,
   );
   const [globalExpand, setGlobalExpand] = useState(false);
   const [expandedMenu, setExpandedMenu] = useState<string[]>([]);
@@ -332,7 +332,7 @@ export const ContributionForm = ({
     contributeForm.setFieldsValue({
       title: changeSet.title,
       comments: changeSet.comments,
-      accessLevel: PropertyAccessLevel.AdvancedContributor,
+      accessLevel: PropertyAccessLevel.BeginnerContributor,
     });
   }, [changeSet.title, changeSet.comments, contributeForm]);
 
@@ -517,55 +517,69 @@ export const ContributionForm = ({
   };
 
   const handleSubmitChanges = async () => {
-    setIsSubmitting(true);
-    try {
-      const formValues = contributeForm.getFieldsValue();
+    Modal.confirm({
+      title: 'Submit Contribution',
+      content:
+        'Are you sure you want to submit this contribution? Once submitted, it will be sent for review.',
+      okText: 'Submit',
+      cancelText: 'Cancel',
+      onOk: async () => {
+        setIsSubmitting(true);
+        try {
+          const formValues = contributeForm.getFieldsValue();
 
-      const changesToSubmit = isReviewMode ? reviewChanges : changeSet.changes;
-      const payload: Contribution = {
-        id: contributionId ? contributionId : ID!,
-        root: entity.entityRef,
-        changeSet: {
-          title: formValues.title || changeSet.title,
-          comments: formValues.comments || changeSet.comments || '',
-          timestamp: new Date().getTime(),
-          changes: changesToSubmit,
-          author: changeSet.author || user?.email,
-          id: changeSetId,
-        },
-        status: ContributionStatus.Submitted,
-        reviews: [],
-        media: [],
-      };
+          const changesToSubmit = isReviewMode
+            ? reviewChanges
+            : changeSet.changes;
+          const payload: Contribution = {
+            id: contributionId ? contributionId : ID!,
+            root: entity.entityRef,
+            changeSet: {
+              title: formValues.title || changeSet.title,
+              comments: formValues.comments || changeSet.comments || '',
+              timestamp: new Date().getTime(),
+              changes: changesToSubmit,
+              author: changeSet.author || user?.email,
+              id: changeSetId,
+            },
+            status: ContributionStatus.Submitted,
+            reviews: [],
+            media: [],
+          };
 
-      const response = await createSubmitChangeContribution(
-        payload,
-        user.email,
-      );
-      message.success('Contribution submitted successfully!');
-      setIsSaveChange(false);
-      navigate('/contribute/interim/new/', {
-        replace: true,
-        state: { reload: true, timestamp: Date.now() },
-      });
-      if (isReviewMode) {
-        setReviewChanges([]);
-        setIsReviewMode(false);
-      } else {
-        onChange({
-          ...response,
-        });
-      }
-    } catch (error) {
-      console.error('Submission failed:', error);
-      message.error(
-        error instanceof Error
-          ? error.message
-          : 'Failed to submit contribution.',
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
+          const response = await createSubmitChangeContribution(
+            payload,
+            user.email,
+          );
+          message.success('Contribution submitted successfully!');
+          setIsSaveChange(false);
+
+          // Navigate back to contribute home to show the table
+          navigate('/contribute', {
+            replace: true,
+            state: { reload: true, timestamp: Date.now() },
+          });
+
+          if (isReviewMode) {
+            setReviewChanges([]);
+            setIsReviewMode(false);
+          } else {
+            onChange({
+              ...response,
+            });
+          }
+        } catch (error) {
+          console.error('Submission failed:', error);
+          message.error(
+            error instanceof Error
+              ? error.message
+              : 'Failed to submit contribution.',
+          );
+        } finally {
+          setIsSubmitting(false);
+        }
+      },
+    });
   };
 
   const resetAllChanges = useCallback(() => {
@@ -685,10 +699,7 @@ export const ContributionForm = ({
     ContributionStatus.Submitted,
     ContributionStatus.WorkInProgress,
   ].includes(currentStatus!);
-  const contributionSection =
-    mode === ReviewMode.Create
-      ? ContributionSectionStyleCreate
-      : ContributionSectionStyle;
+
   return (
     <>
       {title && <h1 className="page-title-1">{title}</h1>}
@@ -697,11 +708,12 @@ export const ContributionForm = ({
         layout="vertical"
         onFinish={isSaveChange ? handleSaveChanges : handleSubmitChanges}
         style={{
-          ...contributionSection,
+          // ...ContributionSectionStyle,
           display: 'flex',
           flexDirection: 'column',
           padding: 0,
           justifyContent: 'space-around',
+          margin: '20px 0',
         }}
       >
         <Card
@@ -770,7 +782,7 @@ export const ContributionForm = ({
                 }
                 name="comments"
               >
-                <Input.TextArea rows={8} disabled={isReadOnlyMode} />
+                <Input.TextArea rows={4} disabled={isReadOnlyMode} />
               </Form.Item>
             </Col>
           </Row>

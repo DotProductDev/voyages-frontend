@@ -1,60 +1,51 @@
 import '@/style/contributeContent.scss';
 import '@/style/newVoyages.scss';
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 
 import {
   VoyageSchema,
-  EntitySchema,
   materializeNew,
   MaterializedEntity,
   Contribution,
   ContributionStatus,
   getSchema,
 } from '@dotproductdev/voyages-contribute';
-import { AgGridReact } from 'ag-grid-react';
-import { Button, Divider, Form, Input, Pagination, message } from 'antd';
+import { Button, Divider } from 'antd';
 import { useDispatch, useSelector } from 'react-redux';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 
-import {
-  deleteContribution,
-  fetchContributionsDataByAuthor,
-} from '@/fetch/contributeFetch/fetchContributionsData';
 import { fetchSubmitEditVoaygesForm } from '@/fetch/contributeFetch/fetchSubmitEditVoaygesForm';
 import { usePageRouter } from '@/hooks/usePageRouter';
-import { useSearchEditRequestsFilters } from '@/hooks/useSearchEditRequestsFilters';
 import { useVoyageContribution } from '@/hooks/useVoyageContribution';
 import { loadUserFromStorage } from '@/redux/getAuthUserSlice';
 import { RootState } from '@/redux/store';
 
-import { useColumnNewVoyagesDefs } from '../commons/useColumnDefs';
-import { VoyageFormWrapper } from '../commons/VoyageFormWrapper';
+import { ContributionFormWrapper } from '../commons/ContributionFormWrapper';
 import { ReviewMode } from '../ContributionForm';
-import {
-  TransformedContribution,
-  transformContributionData,
-} from '../utils/transformContributionData';
-
-export interface EntityFormProps {
-  schema: EntitySchema;
-}
-
-const tempNewVoyage = materializeNew(VoyageSchema, uuidv4());
+import { TransformedContribution } from '../utils/transformContributionData';
 
 export interface NewVoyageProps {
-  entity?: MaterializedEntity;
+  showForm?: boolean;
+  formEntity?: MaterializedEntity;
+  selectedContribution?: Contribution | TransformedContribution;
+  formMode?: ReviewMode;
+  contributionId?: string;
+  onBack?: () => void;
+  onChange?: (
+    contribution: Contribution | TransformedContribution | undefined,
+  ) => void;
 }
 
-const NewVoyage: React.FC = ({
-  entity: _entity = tempNewVoyage,
-}: NewVoyageProps) => {
+const NewVoyage: React.FC<NewVoyageProps> = ({
+  showForm: externalShowForm,
+  formEntity: externalFormEntity,
+  selectedContribution: externalSelectedContribution,
+  formMode: externalFormMode = ReviewMode.Create,
+  contributionId: externalContributionId,
+  onBack: externalOnBack,
+  onChange: externalOnChange,
+}) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
@@ -66,27 +57,30 @@ const NewVoyage: React.FC = ({
     dispatch(loadUserFromStorage());
   }, [dispatch]);
 
-  const [form] = Form.useForm();
-  const gridRef = useRef<AgGridReact<TransformedContribution>>(null);
-  const { newVoyagesFilters, buildNewVoyagesFilterQuery } =
-    useSearchEditRequestsFilters(form, gridRef);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [page, setPage] = useState(1);
-  const [totalResultsCount, setTotalResultsCount] = useState(0);
-  const [showForm, setShowForm] = useState(false);
-  const [formMode, setFormMode] = useState<ReviewMode>(ReviewMode.Create);
-  const [contributionId, setContributionId] = useState<string | undefined>('');
+  const [internalShowForm, setInternalShowForm] = useState(false);
+  const [internalFormMode, setInternalFormMode] = useState<ReviewMode>(
+    ReviewMode.Create,
+  );
+  const [internalContributionId, setInternalContributionId] = useState<
+    string | undefined
+  >('');
 
   // Use shared hook for contribution state management
   const {
-    selectedContribution,
-    formEntity,
+    selectedContribution: internalSelectedContribution,
+    formEntity: internalFormEntity,
     setSelectedContribution,
-    setContributions,
     updateFormEntity,
     contributions,
-    updateContribution,
   } = useVoyageContribution();
+
+  // Determine which values to use (external props take precedence)
+  const showForm = externalShowForm ?? internalShowForm;
+  const formEntity = externalFormEntity ?? internalFormEntity;
+  const selectedContribution =
+    externalSelectedContribution ?? internalSelectedContribution;
+  const formMode = externalFormMode ?? internalFormMode;
+  const contributionId = externalContributionId ?? internalContributionId;
 
   // Load contribution by ID when id param exists
   useEffect(() => {
@@ -94,8 +88,8 @@ const NewVoyage: React.FC = ({
       if (id && user?.email && contributions.length > 0) {
         const contribution = contributions.find((c) => c.id === id);
         if (contribution) {
-          setFormMode(ReviewMode.Edit);
-          setContributionId(id);
+          setInternalFormMode(ReviewMode.Edit);
+          setInternalContributionId(id);
 
           // Check if this is editing an existing voyage or creating a new one
           const isExistingVoyage = contribution.root.type === 'existing';
@@ -138,7 +132,6 @@ const NewVoyage: React.FC = ({
           updateFormEntity(entityToUse);
 
           // Keep the contribution with all its changes intact
-          // ContributionForm's stackedEntity will apply them for display
           const editableContribution: Contribution = {
             ...contribution,
             root: {
@@ -150,7 +143,7 @@ const NewVoyage: React.FC = ({
           };
 
           setSelectedContribution(editableContribution);
-          setShowForm(true);
+          setInternalShowForm(true);
         }
       }
     };
@@ -163,147 +156,6 @@ const NewVoyage: React.FC = ({
     setSelectedContribution,
     updateFormEntity,
   ]);
-
-  const handlePageChange = useCallback(
-    (newPage: number, pageSize?: number) => {
-      setPage(newPage);
-      if (pageSize && pageSize !== rowsPerPage) {
-        setRowsPerPage(pageSize);
-      }
-      gridRef.current?.api.paginationGoToPage(newPage - 1);
-    },
-    [rowsPerPage],
-  );
-
-  const defaultColDef = useMemo(
-    () => ({
-      sortable: true,
-      resizable: true,
-      filter: false,
-      cellStyle: {
-        paddingTop: '12px',
-        fontSize: '13px',
-      },
-    }),
-    [],
-  );
-
-  const getRowRowStyle = useCallback(
-    () => ({
-      fontSize: '0.8rem',
-      fontWeight: 500,
-      color: '#000',
-      fontFamily: 'sans-serif',
-    }),
-    [],
-  );
-
-  // Fetch contributions data
-  const fetchContributions = useCallback(async () => {
-    const params = buildNewVoyagesFilterQuery();
-    try {
-      const response = await fetchContributionsDataByAuthor(
-        params,
-        user?.email,
-      );
-      const contributionsArray = response?.data || [];
-      // Transform contributions (API already filters by author)
-      const transformedContributions = contributionsArray.map(
-        transformContributionData,
-      );
-      setContributions(transformedContributions);
-      setTotalResultsCount(response?.total || transformedContributions.length);
-    } catch (err) {
-      console.error('Error fetching data:', err);
-      message.error('Failed to fetch contributions');
-    }
-  }, [buildNewVoyagesFilterQuery, user?.email, setContributions]);
-
-  useEffect(() => {
-    const state = location.state as { reload?: boolean; timestamp?: number };
-    if (state?.reload) {
-      // Reset form state
-      setShowForm(false);
-      setSelectedContribution(undefined);
-      updateFormEntity(undefined);
-      setContributionId('');
-
-      // Fetch fresh data
-      if (user?.email) {
-        fetchContributions();
-      }
-
-      // Clear the state to prevent repeated reloads
-      navigate(location.pathname, { replace: true, state: {} });
-    }
-  }, [
-    location,
-    navigate,
-    user?.email,
-    fetchContributions,
-    setContributions,
-    updateFormEntity,
-    setSelectedContribution,
-  ]);
-
-  const handleEditContribution = useCallback(
-    async (data: TransformedContribution) => {
-      if (!data) return;
-      setFormMode(ReviewMode.Edit);
-      setContributionId(data.id);
-
-      // Check if this is editing an existing voyage or creating a new one
-      const isExistingVoyage = data.root.type === 'existing';
-
-      let entityToUse: MaterializedEntity;
-
-      if (isExistingVoyage) {
-        // For existing voyages: Fetch the actual entity from the database
-        try {
-          const res = await fetchSubmitEditVoaygesForm(String(data.root.id));
-          if (res.status === 200 && res.data) {
-            entityToUse = res.data;
-          } else {
-            // Fallback to blank entity if fetch fails
-            console.error(
-              'Failed to fetch existing voyage, using blank entity',
-            );
-            entityToUse = materializeNew(
-              getSchema(data.root.schema),
-              data.root.id,
-            );
-          }
-        } catch (error) {
-          console.error('Error fetching existing voyage:', error);
-          // Fallback to blank entity
-          entityToUse = materializeNew(
-            getSchema(data.root.schema),
-            data.root.id,
-          );
-        }
-      } else {
-        // For "new" voyages: Create blank entity
-        // The ContributionForm will apply changes via stackedEntity memo
-        entityToUse = materializeNew(getSchema(data.root.schema), data.root.id);
-      }
-
-      updateFormEntity(entityToUse);
-      // Keep the contribution with all its changes intact
-      // ContributionForm's stackedEntity will apply them for display
-      const editableContribution: Contribution = {
-        ...data,
-        root: {
-          ...data.root,
-          type: (isExistingVoyage ? 'existing' : 'new') as 'existing' | 'new',
-        },
-      };
-
-      setSelectedContribution(editableContribution);
-      setShowForm(true);
-      navigate(`/contribute/interim/new/${data?.id}`);
-    },
-    [navigate, setSelectedContribution, updateFormEntity],
-  );
 
   // Handle new voyage button click
   const handleNewVoyageClick = useCallback(() => {
@@ -324,56 +176,74 @@ const NewVoyage: React.FC = ({
       reviews: [],
       media: [],
     };
-    setContributionId(String(newEntity.entityRef.id));
+    setInternalContributionId(String(newEntity.entityRef.id));
     updateFormEntity(newEntity);
     setSelectedContribution(newContribution);
-    setFormMode(ReviewMode.Create);
-    setShowForm(true);
+    setInternalFormMode(ReviewMode.Create);
+    setInternalShowForm(true);
   }, [user?.email, setSelectedContribution, updateFormEntity]);
 
   // Handle back button click
   const handleBackClick = useCallback(() => {
-    setShowForm(false);
-    setSelectedContribution(undefined);
-    updateFormEntity(undefined);
-    fetchContributions();
-    navigate('/contribute/interim/new/', { replace: true });
-  }, [fetchContributions, navigate, setSelectedContribution, updateFormEntity]);
+    if (externalOnBack) {
+      externalOnBack();
+    } else {
+      setInternalShowForm(false);
+      setSelectedContribution(undefined);
+      updateFormEntity(undefined);
+      navigate('/contribute', { replace: true });
+    }
+  }, [externalOnBack, navigate, setSelectedContribution, updateFormEntity]);
 
-  // Handle delete contribution
-  const handleDelete = useCallback(
-    async (contributionId: string) => {
-      try {
-        await deleteContribution(contributionId, user?.email);
-        message.success('Contribution deleted successfully');
-        fetchContributions();
-      } catch (error) {
-        console.error('Error deleting contribution:', error);
-        message.error('Failed to delete contribution');
+  // Handle contribution form change
+  const handleContributionChange = useCallback(
+    (contribution: Contribution | TransformedContribution | undefined) => {
+      if (externalOnChange) {
+        externalOnChange(contribution);
+      } else {
+        setSelectedContribution(contribution);
       }
     },
-    [user?.email, fetchContributions],
+    [externalOnChange, setSelectedContribution],
   );
 
-  // Define column definitions with handlers
-  const columnDefs = useColumnNewVoyagesDefs(
-    handleEditContribution,
-    handleDelete,
-  );
-
-  // Fetch contributions on mount and when filters change
+  // Handle location state reload
   useEffect(() => {
-    if (user?.email && !showForm) {
-      fetchContributions();
+    const state = location.state as { reload?: boolean; timestamp?: number };
+    if (state?.reload) {
+      // Reset form state
+      setInternalShowForm(false);
+      setSelectedContribution(undefined);
+      updateFormEntity(undefined);
+      setInternalContributionId('');
+
+      // Clear the state to prevent repeated reloads
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location, navigate, updateFormEntity, setSelectedContribution]);
+
+  // If no form is shown and user navigates directly to /contribute/interim/new/
+  // Create a new voyage form automatically
+  useEffect(() => {
+    if (
+      contributePath === 'interim' &&
+      !showForm &&
+      !id &&
+      user?.email &&
+      !externalShowForm
+    ) {
+      handleNewVoyageClick();
     }
   }, [
-    newVoyagesFilters,
-    buildNewVoyagesFilterQuery,
-    user?.email,
+    contributePath,
     showForm,
-    fetchContributions,
+    id,
+    user?.email,
+    handleNewVoyageClick,
+    externalShowForm,
   ]);
 
+  // Show form view
   if (showForm && formEntity && selectedContribution) {
     return (
       <>
@@ -386,32 +256,18 @@ const NewVoyage: React.FC = ({
             }}
           >
             <Button onClick={handleBackClick} style={{ height: '32px' }}>
-              ← Back to Table
+              ← Back to Home
             </Button>
           </div>
-          <div style={{ marginTop: '5vh' }}>
-            <Form layout="vertical" form={form}>
-              <Form.Item
-                name="voyageComments"
-                label={<span className="lable-title">Voyage comments:</span>}
-              >
-                <Input.TextArea rows={2} />
-              </Form.Item>
-            </Form>
-            <small className="comment-small">
-              The comments above are meant for information related to the voyage
-              which does not fit any of the existing fields. For comments meant
-              to the reviewer/editor, please use the contributor&apos;s comments
-              at the end of this form or any of the specific field comment
-              boxes.
-            </small>
-          </div>
+          <h1 className="page-title-1" style={{ margin: '10px 0' }}>
+            New Voyage
+          </h1>
 
           <Divider style={{ margin: '12px 0' }} />
-          <VoyageFormWrapper
+          <ContributionFormWrapper
             entity={formEntity}
             contribution={selectedContribution}
-            onChange={updateContribution}
+            onChange={handleContributionChange}
             mode={formMode}
             contributionId={contributionId}
             currentStatus={
@@ -425,98 +281,8 @@ const NewVoyage: React.FC = ({
     );
   }
 
-  // Show table view
-  return (
-    <div className="contribute-content">
-      {contributePath === 'interim' && (
-        <>
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: '16px',
-            }}
-          >
-            <h1 className="page-title-1" style={{ margin: 0 }}>
-              New Voyage
-            </h1>
-            <Button
-              type="primary"
-              onClick={handleNewVoyageClick}
-              className="new-voyage-button"
-            >
-              + New Voyage
-            </Button>
-          </div>
-          <p>
-            Variables are organized into eight categories. Complete as many
-            boxes in each category as your source(s) allow. Comments or notes on
-            any entry may be added by clicking on the comment icon to the right
-            of each input box. Should you wish to add a port or region that does
-            not appear in the drop-down menu, please let the editors know via
-            the note box at the foot of the entry form. If required, use this
-            box for any additional information. You can review your complete
-            entry at any time by clicking on the &apos;Review&apos; button. To
-            submit your entry you must move to the Review page first.
-          </p>
-        </>
-      )}
-      {contributions.length > 0 && (
-        <>
-          <div
-            className="ag-theme-alpine compact-table"
-            style={{
-              height: 'calc(60vh - 280px)',
-              width: 'calc(100vw - 120px)',
-              border: '1px solid #d9d9d9',
-              borderRadius: '12px',
-              boxShadow: '0 4px 6px rgba(0, 0, 0, 0.05)',
-            }}
-          >
-            <AgGridReact<TransformedContribution>
-              theme="legacy"
-              ref={gridRef}
-              rowData={contributions}
-              columnDefs={columnDefs}
-              defaultColDef={defaultColDef}
-              getRowStyle={getRowRowStyle}
-              enableBrowserTooltips={true}
-              paginationPageSize={rowsPerPage}
-              pagination={true}
-              suppressPaginationPanel={true}
-              getRowClass={(params) =>
-                params.rowIndex % 2 === 0 ? 'even-row' : 'odd-row'
-              }
-              headerHeight={36}
-              suppressHorizontalScroll={false}
-            />
-          </div>
-          <div
-            style={{
-              marginTop: '16px',
-              display: 'flex',
-              justifyContent: 'flex-end',
-            }}
-          >
-            <Pagination
-              current={page}
-              total={totalResultsCount}
-              pageSize={rowsPerPage}
-              showSizeChanger
-              showTotal={(total, range) =>
-                `Showing ${range[0]}-${range[1]} of ${total} contributions`
-              }
-              pageSizeOptions={['5', '10', '20', '50', '100']}
-              onChange={handlePageChange}
-              onShowSizeChange={handlePageChange}
-              style={{ margin: 0 }}
-            />
-          </div>
-        </>
-      )}
-    </div>
-  );
+  // Return null when no form (table is now in ContributeHomeWelcome)
+  return null;
 };
 
 export default NewVoyage;

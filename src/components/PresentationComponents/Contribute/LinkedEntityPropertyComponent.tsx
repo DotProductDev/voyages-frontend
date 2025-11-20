@@ -234,7 +234,6 @@ export const LinkedEntityPropertyComponent = (
         onChange={readOnly ? undefined : handleChange}
         showSearch={!readOnly}
         disabled={readOnly}
-        popupMatchSelectWidth={false}
         styles={{
           popup: {
             root: { maxHeight: 400, overflow: 'auto', zIndex: 9999 },

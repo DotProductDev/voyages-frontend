@@ -21,7 +21,7 @@ import {
   getConflictErrorMessage,
 } from '@/utils/functions/voyageValidation';
 
-import { VoyageFormWrapper } from '../commons/VoyageFormWrapper';
+import { ContributionFormWrapper } from '../commons/ContributionFormWrapper';
 import { ContributionSectionStyle, ReviewMode } from '../ContributionForm';
 
 interface EditExistingVoyageProps {
@@ -51,9 +51,13 @@ const EditExistingVoyage: React.FC<EditExistingVoyageProps> = ({
 
   // Handle back button click to return to search
   const handleBack = () => {
+    setLoading(true);
     resetContribution();
     formId.resetFields();
-    setLoading(false);
+    // Set a small delay to show loading state before resetting
+    setTimeout(() => {
+      setLoading(false);
+    }, 100);
   };
 
   const handleSubmit = async (values: any): Promise<void> => {
@@ -244,7 +248,7 @@ const EditExistingVoyage: React.FC<EditExistingVoyageProps> = ({
         )}
       </div>
       {hasEntity && selectedContribution && (
-        <VoyageFormWrapper
+        <ContributionFormWrapper
           title="Edit an Existing Record of a Voyage"
           showBackButton={true}
           onBack={handleBack}
