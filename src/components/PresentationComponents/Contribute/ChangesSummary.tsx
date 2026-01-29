@@ -1,3 +1,5 @@
+import { useMemo } from 'react';
+
 import {
   ReloadOutlined,
   SaveOutlined,
@@ -6,20 +8,84 @@ import {
   DeleteOutlined,
 } from '@ant-design/icons';
 import {
+  Contribution,
   EntityChange,
   MaterializedEntity,
 } from '@dotproductdev/voyages-contribute';
 import { Preview } from '@mui/icons-material';
-import { Button, Typography, Timeline, Space } from 'antd';
+import { Button, Typography, Timeline, Space, Tabs } from 'antd';
+import type { TabsProps } from 'antd';
+
+import '@/style/contributeContent.scss';
 
 import { ReviewMode } from './ContributionForm';
 import PropertyChangesList from './PropertyChangesList';
+
 const { Text } = Typography;
 
 const iconMap = {
   update: <EditOutlined style={{ color: '#1890ff' }} />,
   undelete: <PlusOutlined style={{ color: '#52c41a' }} />,
   delete: <DeleteOutlined style={{ color: '#f5222d' }} />,
+};
+
+// Reusable inner component for displaying changes timeline
+interface ChangesTimelineProps {
+  changes: EntityChange[];
+  handleDeleteChange?: (propertyToDelete: string) => void;
+  readOnly?: boolean;
+  emptyMessage?: string;
+}
+
+const ChangesTimeline = ({
+  changes,
+  handleDeleteChange,
+  readOnly = false,
+  emptyMessage = 'No changes in this version',
+}: ChangesTimelineProps) => {
+  // No-op function for read-only mode
+  const noOpDelete = () => {};
+
+  if (changes.length === 0) {
+    return (
+      <Text type="secondary" italic>
+        {emptyMessage}
+      </Text>
+    );
+  }
+
+  return (
+    <Timeline
+      mode="left"
+      items={changes.map((change, index) => ({
+        key: index,
+        color: 'blue',
+        dot: iconMap[change.type],
+        children: (
+          <div style={{ marginTop: 10, marginBottom: 10 }}>
+            <div style={{ marginBottom: 8 }}>
+              <Text strong style={{ color: 'rgb(55, 148, 141)' }}>
+                {change.type.toUpperCase()} @{' '}
+                <Text type="secondary">
+                  {change.entityRef.schema}#{change.entityRef.id}
+                </Text>
+              </Text>
+            </div>
+            {change.type === 'update' ? (
+              <PropertyChangesList
+                changes={change.changes}
+                handleDeleteChange={readOnly ? noOpDelete : (handleDeleteChange ?? noOpDelete)}
+              />
+            ) : change.type === 'delete' ? (
+              <div>Delete</div>
+            ) : (
+              <div>Un Delete</div>
+            )}
+          </div>
+        ),
+      }))}
+    />
+  );
 };
 
 interface ChangesSummaryProps {
@@ -38,6 +104,10 @@ interface ChangesSummaryProps {
   isSaving?: boolean;
   isSubmitting?: boolean;
   mode?: ReviewMode;
+  // New props for stacked review system
+  contribution?: Contribution;
+  currentReviewChanges?: EntityChange[];
+  originalChanges?: EntityChange[];
 }
 
 const ChangesSummary = ({
@@ -54,52 +124,140 @@ const ChangesSummary = ({
   isSaveChange = false,
   isSaving = false,
   isSubmitting = false,
+  contribution,
+  currentReviewChanges = [],
+  originalChanges = [],
 }: ChangesSummaryProps) => {
   const isDisableSubmitChange =
     (isSaveChange && mode === ReviewMode.Create) || mode === ReviewMode.Edit;
+
+  // Build tab items for stacked review view
+  const tabItems: TabsProps['items'] = useMemo(() => {
+    // For Create mode or when no contribution, show simple single-tab view
+    // Only show stacked tabs in Review mode or ReadOnly mode (viewing existing contributions)
+    const shouldShowStackedTabs =
+      contribution &&
+      (isReviewMode || mode === ReviewMode.ReadOnly || mode === ReviewMode.Edit);
+
+    if (!shouldShowStackedTabs) {
+      return [
+        {
+          key: 'changes',
+          label: `Changes (${changes.length})`,
+          children: (
+            <div style={{ overflowY: 'auto', maxHeight: 'calc(100% - 50px)' }}>
+              <ChangesTimeline
+                changes={changes}
+                handleDeleteChange={handleDeleteChange}
+                readOnly={readOnly}
+                emptyMessage="No changes have been made yet"
+              />
+            </div>
+          ),
+        },
+      ];
+    }
+
+    const items: TabsProps['items'] = [];
+
+    // Tab 1: Original contribution changes (Read-Only)
+    // Use the originalChanges prop which preserves the initial state
+    items.push({
+      key: 'original',
+      label: `Original`,
+      children: (
+        <div style={{ overflowY: 'auto', maxHeight: 'calc(100% - 50px)' }}>
+          <ChangesTimeline
+            changes={originalChanges}
+            readOnly={true}
+            emptyMessage="No changes in original contribution"
+          />
+        </div>
+      ),
+    });
+
+    // Review Tabs: Map through contribution.reviews (Read-Only)
+    if (contribution.reviews && contribution.reviews.length > 0) {
+      contribution.reviews.forEach((review, index) => {
+        const reviewChanges = review.changeSet?.changes || [];
+        items.push({
+          key: `review-${index}`,
+          label: `Review V${index + 1} (${reviewChanges.length})`,
+          children: (
+            <div style={{ overflowY: 'auto', maxHeight: 'calc(100% - 50px)' }}>
+              <ChangesTimeline
+                changes={reviewChanges}
+                readOnly={true}
+                emptyMessage={`No changes in Review V${index + 1}`}
+              />
+            </div>
+          ),
+        });
+      });
+    }
+
+    // Active Tab: Current Review (Editable) - Only show if in review mode
+    if (isReviewMode) {
+      items.push({
+        key: 'current-review',
+        label: (
+          <span >
+            Review ({currentReviewChanges.length})
+          </span>
+        ),
+        children: (
+          <div style={{ overflowY: 'auto', maxHeight: 'calc(100% - 50px)' }}>
+            <ChangesTimeline
+              changes={currentReviewChanges}
+              handleDeleteChange={handleDeleteChange}
+              readOnly={false}
+              emptyMessage="No changes in current review yet"
+            />
+          </div>
+        ),
+      });
+    }
+
+    return items;
+  }, [
+    contribution,
+    changes,
+    currentReviewChanges,
+    originalChanges,
+    isReviewMode,
+    mode,
+    readOnly,
+    handleDeleteChange,
+  ]);
+
+  // Determine default active tab
+  const defaultActiveKey = useMemo(() => {
+    // For Create mode, always show the simple changes tab
+    if (mode === ReviewMode.Create) {
+      return 'changes';
+    }
+    if (isReviewMode && contribution) {
+      return 'current-review';
+    }
+    if (contribution && (mode === ReviewMode.ReadOnly || mode === ReviewMode.Edit)) {
+      return 'original';
+    }
+    return 'changes';
+  }, [isReviewMode, contribution, mode]);
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <div style={{ flex: 1, overflowY: 'auto' }}>
-        {changes.length === 0 ? (
-          <Text type="secondary" italic>
-            No changes have been made yet
-          </Text>
-        ) : (
-          <Timeline
-            mode="left"
-            items={changes.map((change, index) => {
-              return {
-                key: index,
-                color: 'blue',
-                dot: iconMap[change.type],
-                children: (
-                  <div style={{ marginTop: 10, marginBottom: 10 }}>
-                    <div style={{ marginBottom: 8 }}>
-                      <Text strong style={{ color: 'rgb(55, 148, 141)' }}>
-                        {change.type.toUpperCase()} @{' '}
-                        <Text type="secondary">
-                          {change.entityRef.schema}#{change.entityRef.id}
-                        </Text>
-                      </Text>
-                    </div>
-                    {change.type === 'update' ? (
-                      <PropertyChangesList
-                        changes={change.changes}
-                        handleDeleteChange={handleDeleteChange}
-                      />
-                    ) : change.type === 'delete' ? (
-                      <div>Delete</div>
-                    ) : (
-                      <div>Un Delete</div>
-                    )}
-                  </div>
-                ),
-              };
-            })}
-          />
-        )}
+      <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
+        <Tabs
+          defaultActiveKey={defaultActiveKey}
+          items={tabItems}
+          size="small"
+          type="card"
+          style={{ height: '100%' }}
+          tabBarStyle={{ marginBottom: 8 }}
+        />
       </div>
-      <Space.Compact>
+      <Space.Compact style={{ flexShrink: 0, paddingTop: 8 }}>
         <Button
           color="cyan"
           icon={<Preview />}
@@ -119,7 +277,11 @@ const ChangesSummary = ({
                   ? onCommitReview
                   : handleSaveChanges
               }
-              disabled={changes.length === 0}
+              disabled={
+                isReviewMode
+                  ? currentReviewChanges.length === 0
+                  : changes.length === 0
+              }
             >
               {isSaving
                 ? 'Saving...'
@@ -131,7 +293,13 @@ const ChangesSummary = ({
               icon={<ReloadOutlined />}
               danger
               onClick={resetAllChanges}
-              disabled={changes.length === 0 || isSaving || isSubmitting}
+              disabled={
+                (isReviewMode
+                  ? currentReviewChanges.length === 0
+                  : changes.length === 0) ||
+                isSaving ||
+                isSubmitting
+              }
             >
               {isReviewMode ? 'Abandon Review' : 'Reset All'}
             </Button>

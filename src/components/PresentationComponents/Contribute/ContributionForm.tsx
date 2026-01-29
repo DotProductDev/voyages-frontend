@@ -205,6 +205,10 @@ export const ContributionForm = ({
     null,
   );
   const [changeSetId, setChangeSetId] = useState<string>('');
+  // Store original changes to preserve them during review mode
+  const [originalChanges, setOriginalChanges] = useState<EntityChange[]>(
+    () => contribution.changeSet?.changes || [],
+  );
 
   useEffect(() => {
     setIsReviewMode(mode === ReviewMode.Review);
@@ -234,7 +238,11 @@ export const ContributionForm = ({
 
       // Build the changes in the correct order:
       // 1. Start with original contribution changes
-      let allChanges: EntityChange[] = [...changeSet.changes];
+      // In review mode, use originalChanges to preserve initial state
+      // Otherwise, use changeSet.changes for normal editing flow
+      let allChanges: EntityChange[] = isReviewMode
+        ? [...originalChanges]
+        : [...changeSet.changes];
 
       // 2. Add each committed review's changes
       reviews.forEach((review) => {
@@ -308,7 +316,8 @@ export const ContributionForm = ({
       return entity;
     }
   }, [
-    changeSet,
+    originalChanges,
+    changeSet.changes,
     contributionId,
     entity,
     reviews,
@@ -941,6 +950,9 @@ export const ContributionForm = ({
                 isSaving={isSaving}
                 isSubmitting={isSubmitting}
                 mode={mode}
+                contribution={contribution}
+                currentReviewChanges={reviewChanges}
+                originalChanges={originalChanges}
               />
             </div>
           </Card>
