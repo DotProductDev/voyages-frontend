@@ -134,10 +134,14 @@ const ChangesSummary = ({
   // Build tab items for stacked review view
   const tabItems: TabsProps['items'] = useMemo(() => {
     // For Create mode or when no contribution, show simple single-tab view
-    // Only show stacked tabs in Review mode or ReadOnly mode (viewing existing contributions)
+    // Show stacked tabs when:
+    // 1. In review mode, OR
+    // 2. In ReadOnly/Edit mode, OR
+    // 3. There are committed reviews to display
+    const hasCommittedReviews = contribution?.reviews && contribution.reviews.length > 0;
     const shouldShowStackedTabs =
       contribution &&
-      (isReviewMode || mode === ReviewMode.ReadOnly || mode === ReviewMode.Edit);
+      (isReviewMode || hasCommittedReviews || mode === ReviewMode.ReadOnly || mode === ReviewMode.Edit);
 
     if (!shouldShowStackedTabs) {
       return [
@@ -160,17 +164,34 @@ const ChangesSummary = ({
 
     const items: TabsProps['items'] = [];
 
-    // Tab 1: Original contribution changes (Read-Only)
+    // Tab 1: Contribution changes (Read-Only)
     // Use the originalChanges prop which preserves the initial state
+    const contributorName = contribution.changeSet?.author || 'Unknown';
     items.push({
-      key: 'original',
-      label: `Original`,
+      key: 'contribution',
+      label: 'Contribution',
       children: (
         <div style={{ overflowY: 'auto', maxHeight: 'calc(100% - 50px)' }}>
+          <div
+            style={{
+              padding: '8px 12px',
+              marginBottom: '8px',
+              backgroundColor: '#f5f5f5',
+              borderRadius: '4px',
+              borderLeft: '3px solid rgb(55, 148, 141)',
+            }}
+          >
+            <Text type="secondary" style={{ fontSize: '12px' }}>
+              Contributor:
+            </Text>{' '}
+            <Text strong style={{ fontSize: '12px' }}>
+              {contributorName}
+            </Text>
+          </div>
           <ChangesTimeline
             changes={originalChanges}
             readOnly={true}
-            emptyMessage="No changes in original contribution"
+            emptyMessage="No changes in this contribution"
           />
         </div>
       ),
@@ -180,11 +201,28 @@ const ChangesSummary = ({
     if (contribution.reviews && contribution.reviews.length > 0) {
       contribution.reviews.forEach((review, index) => {
         const reviewChanges = review.changeSet?.changes || [];
+        const reviewerName = review.changeSet?.author || 'Unknown';
         items.push({
           key: `review-${index}`,
-          label: `Review V${index + 1} (${reviewChanges.length})`,
+          label: `Review V${index + 1}`,
           children: (
             <div style={{ overflowY: 'auto', maxHeight: 'calc(100% - 50px)' }}>
+              <div
+                style={{
+                  padding: '8px 12px',
+                  marginBottom: '8px',
+                  backgroundColor: '#f5f5f5',
+                  borderRadius: '4px',
+                  borderLeft: '3px solid #1890ff',
+                }}
+              >
+                <Text type="secondary" style={{ fontSize: '12px' }}>
+                  Reviewer:
+                </Text>{' '}
+                <Text strong style={{ fontSize: '12px' }}>
+                  {reviewerName}
+                </Text>
+              </div>
               <ChangesTimeline
                 changes={reviewChanges}
                 readOnly={true}
@@ -200,13 +238,25 @@ const ChangesSummary = ({
     if (isReviewMode) {
       items.push({
         key: 'current-review',
-        label: (
-          <span >
-            Review ({currentReviewChanges.length})
-          </span>
-        ),
+        label: 'Current Review',
         children: (
           <div style={{ overflowY: 'auto', maxHeight: 'calc(100% - 50px)' }}>
+            <div
+              style={{
+                padding: '8px 12px',
+                marginBottom: '8px',
+                backgroundColor: '#e6f7ff',
+                borderRadius: '4px',
+                borderLeft: '3px solid #1890ff',
+              }}
+            >
+              <Text type="secondary" style={{ fontSize: '12px' }}>
+                Reviewer:
+              </Text>{' '}
+              <Text strong style={{ fontSize: '12px', color: '#1890ff' }}>
+                You (In Progress)
+              </Text>
+            </div>
             <ChangesTimeline
               changes={currentReviewChanges}
               handleDeleteChange={handleDeleteChange}
@@ -239,8 +289,12 @@ const ChangesSummary = ({
     if (isReviewMode && contribution) {
       return 'current-review';
     }
+    // If there are committed reviews, show the latest review tab
+    if (contribution?.reviews && contribution.reviews.length > 0) {
+      return `review-${contribution.reviews.length - 1}`;
+    }
     if (contribution && (mode === ReviewMode.ReadOnly || mode === ReviewMode.Edit)) {
-      return 'original';
+      return 'contribution';
     }
     return 'changes';
   }, [isReviewMode, contribution, mode]);
