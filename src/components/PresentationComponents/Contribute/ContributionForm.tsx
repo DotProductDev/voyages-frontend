@@ -314,7 +314,6 @@ export const ContributionForm = ({
     }
   }, [
     originalChanges,
-    changeSet.changes,
     contributionId,
     entity,
     reviews,
@@ -393,7 +392,15 @@ export const ContributionForm = ({
     setIsReviewMode(false);
     setReviewChanges([]);
     message.success(`Review V${nextStackOrder} committed successfully`);
-  }, [reviewChanges, contributeForm, onCommitReview, reviews, user?.email, contribution, onChange]);
+  }, [
+    reviewChanges,
+    contributeForm,
+    onCommitReview,
+    reviews,
+    user?.email,
+    contribution,
+    onChange,
+  ]);
 
   const handleCancelReview = useCallback(() => {
     Modal.confirm({
@@ -410,7 +417,9 @@ export const ContributionForm = ({
         if (onAbandonReview) {
           onAbandonReview();
         }
-        message.info('Current review abandoned. Previous changes remain intact.');
+        message.info(
+          'Current review abandoned. Previous changes remain intact.',
+        );
       },
     });
   }, [onAbandonReview]);
@@ -851,9 +860,7 @@ export const ContributionForm = ({
                   alignItems: 'center',
                 }}
               >
-                <Text strong>
-                  {translatedcontribute.titleCollaps}
-                </Text>
+                <Text strong>{translatedcontribute.titleCollaps}</Text>
                 <Button onClick={toggleExpandAll}>
                   {globalExpand
                     ? translatedcontribute.collapse
