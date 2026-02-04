@@ -93,10 +93,13 @@ export const EntityPropertyComponent = ({
     (ec) =>
       isUpdateEntityChange(ec) && areMatch(ec.entityRef, entity.entityRef),
   ) as EntityUpdate | undefined;
+
   const lastChange = localChanges?.changes.find((c) => c.property === uid);
   const [isOpenNumbersTableDialog, setOpenNumbersTableDialog] = useState(false);
+
   const handleOnCloseNumbersTableDialog = () =>
     setOpenNumbersTableDialog(false);
+
   const handleCreateNew = useCallback((p: EntityOwnedProperty) => {
     const created = materializeNew(
       getSchema(p.linkedEntitySchema),
@@ -115,12 +118,14 @@ export const EntityPropertyComponent = ({
       ],
     });
   }, []);
+
   if (kind === 'entityOwned') {
     if (lastChange && lastChange.kind !== 'owned') {
       return <span>BUG: unexpected change type for Owned entity.</span>;
     }
     const value =
       entity.data[property.label] ?? lastChange?.ownedEntity ?? null;
+
     if (value === null) {
       return (
         <div style={{ paddingTop: 10 }}>

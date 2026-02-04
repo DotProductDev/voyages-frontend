@@ -83,8 +83,9 @@
 
 .contribuite-main-content {
   margin: 0 2rem;
+  padding-bottom: 1.5rem;
   margin-top: 7rem;
-  display: inline-flex;       
+  display: flex;      
   box-sizing: border-box;
 
   .contribute-content {
@@ -104,6 +105,9 @@
         color: rgb(0, 114, 105);
         text-decoration: none;
       }
+    }
+    .ant-card-bordered{
+      border: 1px solid #028479;
     }
   }
 
@@ -235,14 +239,12 @@
   background: rgb(55, 148, 141);
   color: #fff;
   font-size: 0.85rem;
-  padding: 2px 8px 2px 12px;
+  padding: 2px 6px 6px 10px;
   border-top-right-radius: 6px;
   border-top-left-radius: 6px;
-  cursor: pointer;
-  user-select: none;
-  display: flex;
-  align-items: center;
+  margin-top: 4px;
 }
+
 .expanded-icon{
   margin-right: 4px;
   font-size: 18px;
@@ -347,3 +349,310 @@
     border-radius: 4px;
     border-bottom: 1px solid rgba(249, 249, 249, 0.2509803922);
 }
+
+/* Add these styles to your existing table.scss file */
+
+.compact-table {
+  .ag-header {
+    background-color: #f8f9fa !important;
+    border-bottom: 2px solid #e9ecef !important;
+    font-weight: 600 !important;
+  }
+
+  .ag-header-cell {
+    border-right: 1px solid #e9ecef !important;
+    color: rgb(55, 148, 141)!important;
+  }
+
+  .compact-header {
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    color: #495057 !important;
+  }
+
+  .ag-cell {
+    // padding: 8px 12px !important;
+    border-right: 1px solid #f1f3f4 !important;
+    border-bottom: 1px solid #f1f3f4 !important;
+    font-size: 13px !important;
+    line-height: 1.2 !important;
+  }
+
+  .even-row {
+    background-color: #ffffff !important;
+  }
+
+  .odd-row {
+    background-color: #f8f9fa !important;
+  }
+
+  .ag-row:hover {
+    background-color: #e3f2fd !important;
+    cursor: pointer;
+  }
+
+  /* Remove default row selection styling */
+  .ag-row-selected {
+    background-color: #e3f2fd !important;
+  }
+
+  /* Compact scrollbars */
+  .ag-body-horizontal-scroll {
+    height: 12px !important;
+  }
+
+  .ag-body-vertical-scroll {
+    width: 12px !important;
+  }
+
+  /* Header sorting icons */
+  .ag-icon-asc,
+  .ag-icon-desc {
+    font-size: 12px !important;
+  }
+
+  /* Remove extra padding from cells */
+  .ag-cell-value {
+    line-height: 1.2 !important;
+  }
+}
+
+/* Custom pointer row styling */
+.custom-pointer-row {
+  cursor: pointer !important;
+}
+
+.custom-pointer-row:hover {
+  background-color: #f0f8ff !important;
+}
+
+/* Status chip custom styling */
+.status-chip {
+  border-radius: 12px !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  height: 20px !important;
+  padding: 0 8px !important;
+}
+
+/* Table container improvements */
+.tableContainer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background-color: #f8f9fa;
+  border-top: 1px solid #e9ecef;
+  border-radius: 0 0 8px 8px;
+}
+
+.pagination-contribute {
+  display: flex;
+  align-items: center;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .compact-table {
+    .ag-header-cell,
+    .ag-cell {
+      padding: 6px 8px !important;
+      font-size: 12px !important;
+    }
+  }
+  
+  .tableContainer {
+    flex-direction: column;
+    gap: 12px;
+  }
+}
+.list-edittorial-container{
+  margin: 5px 0 30px 0;
+}
+
+/* AG Grid Checkbox Styling */
+.ag-theme-alpine {
+  /* Custom checkbox styling */
+  --ag-checkbox-checked-color: #007269;
+  --ag-checkbox-unchecked-color: #d1d5db;
+  --ag-checkbox-indeterminate-color: #007269;
+  --ag-checkbox-background-color: #ffffff;
+  --ag-checkbox-border-color: #d1d5db;
+  --ag-checkbox-border-radius: 4px;
+  --ag-checkbox-size: 16px;
+  
+  /* Checkbox container styling */
+  .ag-selection-checkbox {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+  }
+  
+  /* Custom checkbox appearance */
+  .ag-checkbox-input-wrapper {
+    position: relative;
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+  }
+  
+  .ag-checkbox-input {
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border: 2px solid #d1d5db;
+    border-radius: 4px;
+    background-color: #ffffff;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s ease;
+    
+    &:hover {
+      border-color: #007269;
+      box-shadow: 0 0 0 2px rgba(0, 114, 105, 0.1);
+    }
+    
+    &:checked {
+      background-color: #007269;
+      border-color: #007269;
+      
+      &::after {
+        content: '✓';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: white;
+        font-size: 12px;
+        font-weight: bold;
+      }
+    }
+    
+    &:indeterminate {
+      background-color: #007269;
+      border-color: #007269;
+      
+      &::after {
+        content: '−';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: white;
+        font-size: 14px;
+        font-weight: bold;
+      }
+    }
+  }
+  
+  /* Header checkbox styling */
+  .ag-header-cell .ag-checkbox-input {
+    &:checked {
+      background-color: #007269;
+      border-color: #007269;
+    }
+  }
+  
+  /* Row checkbox styling */
+  .ag-row .ag-checkbox-input {
+    &:checked {
+      background-color: #007269;
+      border-color: #007269;
+    }
+  }
+  
+  /* Custom checkbox variants */
+  .ag-checkbox-input.custom-checkbox {
+    border-radius: 50%; /* Round checkboxes */
+  }
+  
+  .ag-checkbox-input.large-checkbox {
+    width: 20px;
+    height: 20px;
+    border-width: 3px;
+  }
+  
+  .ag-checkbox-input.small-checkbox {
+    width: 14px;
+    height: 14px;
+    border-width: 1px;
+  }
+  
+  /* Disabled state */
+  .ag-checkbox-input:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: #f3f4f6;
+    border-color: #d1d5db;
+  }
+  
+  /* Focus state */
+  .ag-checkbox-input:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(0, 114, 105, 0.2);
+  }
+  
+  /* Disable row click for specific columns */
+  .ag-cell[col-id="Action"] {
+    cursor: default !important;
+    pointer-events: none; /* Completely disable interaction */
+  }
+  
+  /* Or allow only checkbox interaction in Action column */
+  .ag-cell[col-id="Action"] .ag-selection-checkbox {
+    pointer-events: auto; /* Re-enable for checkboxes only */
+  }
+}
+.card-contribute{
+  .ant-card-head{
+    background-color: rgb(55, 148, 141);
+    color: #fff;
+    font-weight: 600;
+    min-height: 40px;
+    padding: 0 12px;
+  }
+}
+.contribute-edit-header{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  button{
+      border-color:#fff;
+      background-color: rgb(55, 148, 141);
+      color: #fff;
+      font-weight: 600;
+
+  }
+}
+
+.card-contribute-decision{
+  margin-bottom: 2rem;
+  .ant-card-head{
+    background-color: rgb(55, 148, 141);
+    color: #fff;
+    font-weight: 600;
+    min-height: 40px;
+    padding: 0 12px;
+  }
+}
+.status-and-decistion{
+  display: flex;
+  justify-content: space-between;
+  .ant-typography{
+    color: #ffffff
+  }
+}
+.action-review-btn{
+  display: flex;
+  gap: 8px;
+    .abandon-review{
+      color: red;
+  }
+
+  .commit-review{
+    color: #fff;
+  }
+}
+

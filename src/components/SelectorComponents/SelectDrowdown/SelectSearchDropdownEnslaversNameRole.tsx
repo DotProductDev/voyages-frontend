@@ -1,10 +1,12 @@
-import { Chip, Typography, TextField, Autocomplete } from '@mui/material';
 import { FunctionComponent, SyntheticEvent } from 'react';
+
+import { Chip, Typography, TextField, Autocomplete } from '@mui/material';
+import { useDispatch, useSelector } from 'react-redux';
+
+import { setListEnslavers } from '@/redux/getRangeSliderSlice';
+import { AppDispatch, RootState } from '@/redux/store';
 import { FilterObjectsState, RolesProps } from '@/share/InterfaceTypes';
 import { getBoderColor } from '@/utils/functions/getColorStyle';
-import { useDispatch, useSelector } from 'react-redux';
-import { AppDispatch, RootState } from '@/redux/store';
-import { setListEnslavers } from '@/redux/getRangeSliderSlice';
 
 interface SelectSearchDropdownEnslaversNameRoleProps {
   textRoleListError: string;
@@ -16,17 +18,19 @@ export const SelectSearchDropdownEnslaversNameRole: FunctionComponent<
 > = ({ textRoleListError, setTextRoleListError }) => {
   const dispatch: AppDispatch = useDispatch();
   const { styleName } = useSelector(
-    (state: RootState) => state.getDataSetCollection
+    (state: RootState) => state.getDataSetCollection,
   );
-  const { languageValue } = useSelector((state: RootState) => state.getLanguages);
+  const { languageValue } = useSelector(
+    (state: RootState) => state.getLanguages,
+  );
 
   const { enslaversNameAndRole, listEnslavers } = useSelector(
-    (state: RootState) => state.rangeSlider as FilterObjectsState
+    (state: RootState) => state.rangeSlider as FilterObjectsState,
   );
 
   const handleSelectedRoleAndName = (
     event: SyntheticEvent<Element, Event>,
-    newValue: RolesProps[]
+    newValue: RolesProps[],
   ) => {
     if (!newValue) return;
     if (newValue.length === 0) {
@@ -68,9 +72,9 @@ export const SelectSearchDropdownEnslaversNameRole: FunctionComponent<
           const { key, ...rest } = tagProps;
           return (
             <Chip
-               key={key}
-               label={option.label[languageValue]}
-               style={{
+              key={key}
+              label={option.label[languageValue]}
+              style={{
                 margin: 2,
                 border: getBoderColor(styleName),
                 color: '#000',

@@ -1,3 +1,4 @@
+/* eslint-disable indent */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import {
@@ -32,7 +33,16 @@ export interface LinkedEntityPropertyComponentProps {
   entity: MaterializedEntity;
   lastChange?: LinkedEntitySelectionChange;
   onChange: EntityFormProps['onChange'];
+  readOnly?: boolean;
 }
+
+// Utility to strip HTML tags and decode entities
+const stripHtmlTags = (html: string): string => {
+  if (!html) return 'N/A';
+  const temp = document.createElement('div');
+  temp.innerHTML = html;
+  return temp.textContent || temp.innerText || 'N/A';
+};
 
 const LinkedLocationComponent = (
   props: Omit<TreeSelectedEntityProps, 'locationsList'>,
@@ -58,55 +68,55 @@ const LinkedLocationComponent = (
 export const LinkedEntityPropertyComponent = (
   props: LinkedEntityPropertyComponentProps & EntityFormProps,
 ) => {
-  const { property, entity, lastChange, onChange } = props;
+  const { property, entity, lastChange, onChange, readOnly = false } = props;
   const [comments, setComments] = useState<string | undefined>();
   const { uid, mode, label, linkedEntitySchema } = property;
+
+  // Call all hooks before any conditional returns (Rules of Hooks)
+  const linkedSchema = getSchema(linkedEntitySchema);
+  const { items: optionItems } = useSchemaEnumeration(linkedEntitySchema);
+  const debouncedLastChange = useDebounce(lastChange, 800);
+
   const value = lastChange
     ? lastChange.changed
     : (entity.data[label] as MaterializedEntity | null);
-  if (value && !isMaterializedEntity(value)) {
-    return <span>BUG: Expected an entity reference value!</span>;
-  }
-  if (mode === EntityLinkEditMode.View) {
-    return <span>{value?.entityRef.id ?? 'null'}</span>;
-  }
-  if (mode === EntityLinkEditMode.Own) {
-    return <LinkedEntityOwnedPropertyComponent {...props} />;
-  }
-  const linkedSchema = getSchema(linkedEntitySchema);
-  const { items: optionItems } = useSchemaEnumeration(linkedEntitySchema);
-
-  const debouncedLastChange = useDebounce(lastChange, 800);
 
   const options = useMemo(() => {
     const res = optionItems.map((entity) => {
       const labelText = linkedSchema.getLabel(entity.data, true);
+      const cleanText = stripHtmlTags(labelText);
       return {
         label: labelText,
         value: entity.entityRef.id,
         entity,
-        searchText: labelText.replace(/<[^>]+>/g, ''),
+        searchText: cleanText,
       };
     });
 
-    if (debouncedLastChange?.changed?.entityRef.type === 'new') {
+    // Handle new entities from debounced changes
+    if (debouncedLastChange?.changed?.entityRef?.type === 'new') {
       const updatedLinkedEntity = debouncedLastChange.linkedChanges
         ? applyUpdate(
             cloneEntity(debouncedLastChange.changed),
             debouncedLastChange.linkedChanges,
           )
         : debouncedLastChange.changed;
+
+      const newLabelText = linkedSchema.getLabel(
+        updatedLinkedEntity.data,
+        true,
+      );
+
       res.push({
-        label: linkedSchema.getLabel(updatedLinkedEntity.data, true),
+        label: newLabelText,
         value: debouncedLastChange.changed.entityRef.id,
         entity: updatedLinkedEntity,
-        searchText: linkedSchema
-          .getLabel(updatedLinkedEntity.data, true)
-          .replace(/<[^>]+>/g, ''),
+        searchText: stripHtmlTags(newLabelText),
       });
     }
+
     return res;
-  }, [optionItems, debouncedLastChange]);
+  }, [optionItems, linkedSchema, debouncedLastChange]);
 
   const handleChange = useCallback(
     (item: string | number | null) => {
@@ -116,9 +126,11 @@ export const LinkedEntityPropertyComponent = (
       if (item === currentId && comments === lastChange?.comments) {
         return;
       }
+
       const matchedOption = options.find(
         (x) => String(x.value) === String(item),
       );
+
       if (!matchedOption) {
         console.warn('No matching option found for item:', item);
         return;
@@ -148,7 +160,6 @@ export const LinkedEntityPropertyComponent = (
     [
       onChange,
       entity,
-      property,
       comments,
       lastChange,
       value,
@@ -187,6 +198,19 @@ export const LinkedEntityPropertyComponent = (
     [options],
   );
 
+  // Early returns after all hooks have been called
+  if (value && !isMaterializedEntity(value)) {
+    return <span>BUG: Expected an entity reference value!</span>;
+  }
+
+  if (mode === EntityLinkEditMode.View) {
+    return <span>{value?.entityRef.id ?? 'null'}</span>;
+  }
+
+  if (mode === EntityLinkEditMode.Own) {
+    return <LinkedEntityOwnedPropertyComponent {...props} />;
+  }
+
   let displaySelected;
 
   if (property.linkedEntitySchema === 'Location') {
@@ -204,23 +228,25 @@ export const LinkedEntityPropertyComponent = (
       <Select
         className={`truncate-select ${lastChange ? 'changedEntityProperty' : ''}`}
         value={value?.entityRef.id}
-        placeholder={`Select ${lowerCaseFirstLetter(label)}`}
+        placeholder={readOnly ? '' : `Select ${lowerCaseFirstLetter(label)}`}
         style={{ width: 'calc(100% - 20px)' }}
         options={styledOptions}
-        onChange={handleChange}
-        showSearch
+        onChange={readOnly ? undefined : handleChange}
+        showSearch={!readOnly}
+        disabled={readOnly}
         styles={{
           popup: {
-            root: {
-              maxHeight: 400,
-              overflow: 'auto',
-              zIndex: 9999,
-            },
+            root: { maxHeight: 400, overflow: 'auto', zIndex: 9999 },
           },
         }}
         optionLabelProp="label"
-        filterOption={(input: string, option: any) =>
-          (option?.searchText ?? '').toLowerCase().includes(input.toLowerCase())
+        filterOption={
+          readOnly
+            ? undefined
+            : (input: string, option: any) =>
+                (option?.searchText ?? '')
+                  .toLowerCase()
+                  .includes(input.toLowerCase())
         }
       />
     );
@@ -229,13 +255,14 @@ export const LinkedEntityPropertyComponent = (
   return (
     <>
       {displaySelected}
-      {mode === EntityLinkEditMode.Create && (
+      {mode === EntityLinkEditMode.Create && !readOnly && (
         <LinkedEntityAddNewDialogComponent {...props} comments={comments} />
       )}
       <EntityPropertyChangeCommentBox
         property={property}
         current={lastChange?.comments}
-        onComment={setComments}
+        onComment={readOnly ? () => {} : setComments}
+        readOnly={readOnly}
       />
     </>
   );

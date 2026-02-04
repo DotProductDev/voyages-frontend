@@ -1,18 +1,20 @@
-import { Chip, Typography, TextField, Autocomplete } from '@mui/material';
 import { FunctionComponent, SyntheticEvent, useEffect, useState } from 'react';
-import {
-  Filter,
-  FilterObjectsState,
-  MultiselectListProps,
-} from '@/share/InterfaceTypes';
-import { getBoderColor } from '@/utils/functions/getColorStyle';
+
+import { Chip, Typography, TextField, Autocomplete } from '@mui/material';
 import { useDispatch, useSelector } from 'react-redux';
-import { AppDispatch, RootState } from '@/redux/store';
+
+import { fetchEnslaverRoleList } from '@/fetch/voyagesFetch/fetchEnslaverRoleList';
 import { fetchNationalityList } from '@/fetch/voyagesFetch/fetchNationalityList';
-import { updateNationalityObject } from '@/utils/functions/updateNationalityObject';
+import { fetchOwnerOutcomeList } from '@/fetch/voyagesFetch/fetchOwnerOutcomeList';
+import { fetchParticularOutcomeList } from '@/fetch/voyagesFetch/fetchParticularOutcomeList';
+import { fetchResistanceList } from '@/fetch/voyagesFetch/fetchResistanceList';
+import { fetchRigOfVesselList } from '@/fetch/voyagesFetch/fetchRigOfVesselList';
+import { fetchSlavesOutcomeList } from '@/fetch/voyagesFetch/fetchSlavesOutcomeList';
+import { fetchTonTypeList } from '@/fetch/voyagesFetch/fetchTonTypeList';
+import { fetchVesselCapturedOutcomeList } from '@/fetch/voyagesFetch/fetchVesselCapturedOutcomeList';
 import { usePageRouter } from '@/hooks/usePageRouter';
 import { setFilterObject } from '@/redux/getFilterSlice';
-import { fetchResistanceList } from '@/fetch/voyagesFetch/fetchResistanceList';
+import { AppDispatch, RootState } from '@/redux/store';
 import {
   varNameOfFlagOfVessel,
   varNameOfFlagOfVesselIMP,
@@ -25,13 +27,13 @@ import {
   varNameVesselCapturedOutcomeList,
   varNameEnslaverRoleList,
 } from '@/share/CONST_DATA';
-import { fetchParticularOutcomeList } from '@/fetch/voyagesFetch/fetchParticularOutcomeList';
-import { fetchRigOfVesselList } from '@/fetch/voyagesFetch/fetchRigOfVesselList';
-import { fetchOwnerOutcomeList } from '@/fetch/voyagesFetch/fetchOwnerOutcomeList';
-import { fetchSlavesOutcomeList } from '@/fetch/voyagesFetch/fetchSlavesOutcomeList';
-import { fetchTonTypeList } from '@/fetch/voyagesFetch/fetchTonTypeList';
-import { fetchVesselCapturedOutcomeList } from '@/fetch/voyagesFetch/fetchVesselCapturedOutcomeList';
-import { fetchEnslaverRoleList } from '@/fetch/voyagesFetch/fetchEnslaverRoleList';
+import {
+  Filter,
+  FilterObjectsState,
+  MultiselectListProps,
+} from '@/share/InterfaceTypes';
+import { getBoderColor } from '@/utils/functions/getColorStyle';
+import { updateNationalityObject } from '@/utils/functions/updateNationalityObject';
 
 interface SelectSearchDropdownListProps {}
 
@@ -40,13 +42,13 @@ export const SelectSearchDropdownList: FunctionComponent<
 > = () => {
   const dispatch: AppDispatch = useDispatch();
   const { styleName } = useSelector(
-    (state: RootState) => state.getDataSetCollection
+    (state: RootState) => state.getDataSetCollection,
   );
   const { varName } = useSelector(
-    (state: RootState) => state.rangeSlider as FilterObjectsState
+    (state: RootState) => state.rangeSlider as FilterObjectsState,
   );
   const { labelVarName } = useSelector(
-    (state: RootState) => state.getShowFilterObject
+    (state: RootState) => state.getShowFilterObject,
   );
   const { styleName: styleNameRoute } = usePageRouter();
   const [multipleList, setMultipleList] = useState<MultiselectListProps[]>([]);
@@ -102,7 +104,7 @@ export const SelectSearchDropdownList: FunctionComponent<
 
   const handleSelected = (
     event: SyntheticEvent<Element, Event>,
-    newValue: MultiselectListProps[]
+    newValue: MultiselectListProps[],
   ) => {
     if (!newValue) return;
     setMultipleList(newValue);
@@ -112,7 +114,7 @@ export const SelectSearchDropdownList: FunctionComponent<
       valueSelect,
       varName,
       labelVarName,
-      styleNameRoute!
+      styleNameRoute!,
     );
   };
 

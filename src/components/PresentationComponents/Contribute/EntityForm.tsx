@@ -14,7 +14,6 @@ import { EntityPropertyComponent } from './EntityPropertyComponent';
 
 export interface ContributionFormProps {
   entity: MaterializedEntity;
-  // onUpdate: (contribution: Contribution) => void;
 }
 
 export interface EntityFormProps {
@@ -31,6 +30,7 @@ export interface EntityFormProps {
   setExpandedMenu: React.Dispatch<React.SetStateAction<string[]>>;
   accessLevel: PropertyAccessLevel;
   onSectionsChange?: (sections: CollapseProps['items']) => void;
+  readOnly?: boolean;
 }
 
 export const EntityForm = ({
@@ -42,6 +42,7 @@ export const EntityForm = ({
   setExpandedMenu,
   accessLevel,
   onSectionsChange,
+  readOnly = false,
 }: EntityFormProps) => {
   const properties = useMemo(
     () =>
@@ -66,6 +67,7 @@ export const EntityForm = ({
               changes={changes}
               onChange={onChange}
               accessLevel={accessLevel}
+              readOnly={readOnly}
             />
           </>
         );
@@ -79,13 +81,14 @@ export const EntityForm = ({
       }),
     [
       properties,
-      accessLevel,
       schema,
       expandedMenu,
       setExpandedMenu,
       entity,
       changes,
       onChange,
+      accessLevel,
+      readOnly,
     ],
   );
 
@@ -152,7 +155,6 @@ export const EntityForm = ({
 
 const addLabel = (item: ReactNode, label: string, schema: string) => {
   const isVoyageSparseDate = schema === 'VoyageSparseDate';
-
   if (isVoyageSparseDate) {
     // For date fields, use a more compact layout with better alignment
     return (

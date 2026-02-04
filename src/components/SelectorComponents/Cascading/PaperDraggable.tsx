@@ -10,6 +10,8 @@ import {
   PaperDraggableContributeStyle,
   PaperDraggableNumberTableStyle,
   PaperDraggablePreviewStyle,
+  PaperDraggableBatchStyle,
+  PaperDraggableBatchManangmentStyle,
 } from '@/styleMUI';
 
 export function PaperDraggable(props: PaperProps) {
@@ -111,6 +113,96 @@ export function PaperDraggableLinkEntityPreviewChange(props: PaperProps) {
         {...props}
         ref={paperRef}
         style={{ ...PaperDraggablePreviewStyle }}
+      />
+    </Draggable>
+  );
+}
+
+export function PaperDraggableBatchAssignmentModal(props: PaperProps) {
+  const paperRef = useRef<HTMLDivElement>(null);
+
+  return (
+    <Draggable
+      handle="#draggable-dialog-batch-assignment"
+      cancel={'[class*="MuiDialogContent-root"]'}
+      nodeRef={paperRef}
+    >
+      <Paper
+        {...props}
+        ref={paperRef}
+        style={{ ...PaperDraggableBatchStyle }}
+      />
+    </Draggable>
+  );
+}
+
+export function PaperDraggableBatchManagement(props: PaperProps) {
+  const paperRef = useRef<HTMLDivElement>(null);
+
+  return (
+    <Draggable
+      handle="#draggable-dialog-batch-management"
+      cancel={'[class*="MuiDialogContent-root"]'}
+      nodeRef={paperRef}
+    >
+      <Paper
+        {...props}
+        ref={paperRef}
+        style={{ ...PaperDraggableBatchManangmentStyle }}
+      />
+    </Draggable>
+  );
+}
+
+export function PaperDraggableCreateBatch(props: PaperProps) {
+  const paperRef = useRef<HTMLDivElement>(null);
+
+  return (
+    <Draggable
+      handle="#draggable-dialog-create-batch"
+      cancel={'[class*="MuiDialogContent-root"]'}
+      nodeRef={paperRef}
+    >
+      <Paper
+        {...props}
+        ref={paperRef}
+        style={{ ...PaperDraggableContributeStyle }}
+      />
+    </Draggable>
+  );
+}
+
+export function PaperDraggableEditBatch(props: PaperProps) {
+  const paperRef = useRef<HTMLDivElement>(null);
+
+  return (
+    <Draggable
+      handle="#draggable-dialog-edit-batch"
+      cancel={'[class*="MuiDialogContent-root"]'}
+      nodeRef={paperRef}
+    >
+      <Paper
+        {...props}
+        ref={paperRef}
+        style={{ ...PaperDraggableContributeStyle }}
+      />
+    </Draggable>
+  );
+}
+
+export function PaperDraggableDeleteBatch(props: PaperProps) {
+  const paperRef = useRef<HTMLDivElement>(null);
+
+  return (
+    <Draggable
+      handle="#draggable-dialog-delete-batch"
+      cancel={'[class*="MuiDialogContent-root"]'}
+      nodeRef={paperRef}
+    >
+      <Paper
+        {...props}
+        ref={paperRef}
+        style={{ ...PaperDraggableContributeStyle }}
       />
     </Draggable>
   );

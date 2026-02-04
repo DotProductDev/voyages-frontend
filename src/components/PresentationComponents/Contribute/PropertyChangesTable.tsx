@@ -48,7 +48,6 @@ const PropertyChangesTable = ({
   handleDeleteChange,
 }: PropertyChangesTableProps) => {
   const [expanded, setExpanded] = useState<boolean>(true);
-  console.log({ sectionName });
   const renderCard = useCallback(
     (c: PropertyChange) => (
       <PropertyChangeCard

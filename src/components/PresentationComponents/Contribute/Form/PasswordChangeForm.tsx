@@ -1,17 +1,27 @@
-import React, { useState } from 'react';
-import { Box, TextField, Button, Typography } from '@mui/material';
+import React from 'react';
 
-const PasswordChangeForm = () => {
-  const [password, setPassword] = useState<string>('');
-  const [passwordAgain, setPasswordAgain] = useState<string>('');
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>): void => {
-    event.preventDefault();
-    if (password === passwordAgain) {
-      alert(`Sucessfully password change`);
-    } else {
-      alert(`Password is not match, try again`);
-    }
-  };
+import { Box, TextField, Button, Typography, Alert } from '@mui/material';
+
+import {
+  usePasswordChangeForm,
+  PasswordChangeFormData,
+} from '@/hooks/usePasswordChangeForm';
+
+interface PasswordChangeFormProps {
+  onSubmit?: (data: PasswordChangeFormData) => Promise<void> | void;
+}
+
+const PasswordChangeForm: React.FC<PasswordChangeFormProps> = ({
+  onSubmit,
+}) => {
+  const {
+    formData,
+    errors,
+    isSubmitting,
+    isSuccess,
+    handleInputChange,
+    handleSubmit,
+  } = usePasswordChangeForm();
 
   return (
     <Box
@@ -23,38 +33,58 @@ const PasswordChangeForm = () => {
       <Typography variant="h4" gutterBottom>
         Set Password
       </Typography>
-      <form onSubmit={handleSubmit}>
+      {isSuccess && (
+        <Alert severity="success" sx={{ mb: 2 }}>
+          Password has been successfully changed!
+        </Alert>
+      )}
+      {errors.general && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {errors.general}
+        </Alert>
+      )}
+      <form onSubmit={(e) => handleSubmit(e, onSubmit)}>
         <Box sx={{ mb: 3 }}>
           <TextField
             sx={{ width: 300 }}
-            InputProps={{
-              sx: {
-                height: 42,
-                padding: '0 8px',
+            slotProps={{
+              input: {
+                sx: {
+                  height: 42,
+                  padding: '0 8px',
+                },
               },
             }}
             label="Password"
             variant="outlined"
             type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            name="password"
+            value={formData.password}
+            onChange={handleInputChange}
+            error={!!errors.password}
+            helperText={errors.password}
             required
           />
         </Box>
         <Box sx={{ mb: 3 }}>
           <TextField
             sx={{ width: 300 }}
-            InputProps={{
-              sx: {
-                height: 42,
-                padding: '0 8px',
+            slotProps={{
+              input: {
+                sx: {
+                  height: 42,
+                  padding: '0 8px',
+                },
               },
             }}
             label="Password (again)"
             variant="outlined"
             type="password"
-            value={passwordAgain}
-            onChange={(e) => setPasswordAgain(e.target.value)}
+            name="passwordAgain"
+            value={formData.passwordAgain}
+            onChange={handleInputChange}
+            error={!!errors.passwordAgain}
+            helperText={errors.passwordAgain}
             required
           />
         </Box>
@@ -62,6 +92,7 @@ const PasswordChangeForm = () => {
           type="submit"
           variant="contained"
           color="primary"
+          disabled={isSubmitting}
           sx={{
             backgroundColor: 'rgb(55, 148, 141)',
             color: '#fff',
@@ -73,7 +104,7 @@ const PasswordChangeForm = () => {
             },
           }}
         >
-          Reset Password
+          {isSubmitting ? 'Changing...' : 'Reset Password'}
         </Button>
       </form>
     </Box>
